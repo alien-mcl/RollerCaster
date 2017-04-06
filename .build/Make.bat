@@ -2,8 +2,8 @@
 ECHO Cleaning up...
 IF EXIST RollerCaster\bin RD /s /q RollerCaster\bin
 IF EXIST RollerCaster\obj RD /s /q RollerCaster\obj
-IF EXIST RollerCaster.Test\bin RD /s /q RollerCaster.Tests\bin
-IF EXIST RollerCaster.Test\obj RD /s /q RollerCaster.Tests\obj
+IF EXIST RollerCaster.Tests\bin RD /s /q RollerCaster.Tests\bin
+IF EXIST RollerCaster.Tests\obj RD /s /q RollerCaster.Tests\obj
 IF EXIST NugetBuild RD /s /q NugetBuild
 ECHO Setting up a version...
 @ECHO OFF

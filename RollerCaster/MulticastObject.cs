@@ -23,10 +23,10 @@ namespace RollerCaster
         }
 
         /// <summary>Gets casted types.</summary>
-        public ICollection<Type> CastedTypes { get { return Types; } }
+        public virtual ICollection<Type> CastedTypes { get { return Types; } }
 
         /// <summary>Gets a collection of property values.</summary>
-        public IEnumerable<MulticastPropertyValue> PropertyValues { get { return new MulticastPropertyValueCollection(this); } }
+        public virtual IEnumerable<MulticastPropertyValue> PropertyValues { get { return new MulticastPropertyValueCollection(this); } }
 
         internal Dictionary<Type, Dictionary<Type, Dictionary<string, object>>> Properties { get; }
 
