@@ -149,6 +149,11 @@ namespace RollerCaster
         private static object ActLikeInternal(this object instance, Type type)
         {
             var mutlicastObject = instance.Unwrap();
+            if (type.IsInstanceOfType(instance))
+            {
+                return instance;
+            }
+
             string name = $"ProxyOf_{type.GetName()}";
             Type generatedType;
             lock (Sync)
@@ -157,7 +162,7 @@ namespace RollerCaster
             }
 
             mutlicastObject.Types.Add(type);
-            var result = generatedType.GetConstructors().First().Invoke(new object[] { mutlicastObject });
+            var result = generatedType.GetConstructors().First().Invoke(new object[] { mutlicastObject, type });
             return result;
         }
 
@@ -165,23 +170,25 @@ namespace RollerCaster
         {
             TypeBuilder typeBuilder = GetTypeBuilder(name, types);
             FieldBuilder wrappedObjectFieldBuilder = typeBuilder.DefineField("_wrappedObject", typeof(MulticastObject), FieldAttributes.Private);
-            typeBuilder.CreateConstructor(wrappedObjectFieldBuilder);
-            typeBuilder.CreateProperty(types[0], typeof(IProxy).GetProperty("WrappedObject"), wrappedObjectFieldBuilder, true);
+            FieldBuilder currentCastedTypeFieldBuilder = typeBuilder.DefineField("_currentCastedType", typeof(MulticastObject), FieldAttributes.Private);
+            typeBuilder.CreateConstructor(wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder);
+            typeBuilder.CreateProperty(types[0], typeof(IProxy).GetProperty("WrappedObject"), wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, wrappedObjectFieldBuilder);
+            typeBuilder.CreateProperty(types[0], typeof(IProxy).GetProperty("CurrentCastedType"), wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, currentCastedTypeFieldBuilder);
             foreach (var property in from type in types from property in type.GetProperties() where property.CanRead select property)
             {
-                typeBuilder.CreateProperty(types[0], property, wrappedObjectFieldBuilder);
+                typeBuilder.CreateProperty(types[0], property, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, null);
             }
 
             Type objectType = typeBuilder.CreateTypeInfo().AsType();
             return objectType;
         }
 
-        private static void CreateConstructor(this TypeBuilder typeBuilder, FieldBuilder wrappedObjectFieldBuilder)
+        private static void CreateConstructor(this TypeBuilder typeBuilder, FieldBuilder wrappedObjectFieldBuilder, FieldBuilder currentCastedTypeFieldBuilder)
         {
             var constructorBuilder = typeBuilder.DefineConstructor(
                 MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
                 CallingConventions.Standard,
-                new[] { typeof(object) });
+                new[] { typeof(object), typeof(Type) });
             var constructorIl = constructorBuilder.GetILGenerator();
             constructorIl.Emit(OpCodes.Ldarg_0);
             constructorIl.Emit(OpCodes.Call, typeof(ProxyBase).GetConstructor(Type.EmptyTypes));
@@ -190,6 +197,9 @@ namespace RollerCaster
             constructorIl.Emit(OpCodes.Ldarg_0);
             constructorIl.Emit(OpCodes.Ldarg_1);
             constructorIl.Emit(OpCodes.Stfld, wrappedObjectFieldBuilder);
+            constructorIl.Emit(OpCodes.Ldarg_0);
+            constructorIl.Emit(OpCodes.Ldarg_2);
+            constructorIl.Emit(OpCodes.Stfld, currentCastedTypeFieldBuilder);
             constructorIl.Emit(OpCodes.Ret);
         }
 
@@ -198,10 +208,11 @@ namespace RollerCaster
             Type castedType,
             PropertyInfo property,
             FieldBuilder wrappedObjectFieldBuilder,
-            bool isWrappedObjectProperty = false)
+            FieldBuilder currentCastedTypeFieldBuilder,
+            FieldBuilder specialFieldBuilder)
         {
             PropertyBuilder propertyBuilder = typeBuilder.DefineProperty(property.Name, PropertyAttributes.HasDefault, property.PropertyType, null);
-            typeBuilder.CreatePropertyGetter(castedType, property, propertyBuilder, wrappedObjectFieldBuilder, isWrappedObjectProperty);
+            typeBuilder.CreatePropertyGetter(castedType, property, propertyBuilder, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, specialFieldBuilder);
             if (property.CanWrite)
             {
                 typeBuilder.CreatePropertySetter(castedType, property, propertyBuilder, wrappedObjectFieldBuilder);
@@ -214,7 +225,8 @@ namespace RollerCaster
             PropertyInfo property,
             PropertyBuilder propertyBuilder,
             FieldBuilder wrappedObjectFieldBuilder,
-            bool isWrappedObjectProperty = false)
+            FieldBuilder currentCastedTypeFieldBuilder,
+            FieldBuilder specialFieldBuilder)
         {
             MethodBuilder getterBuilder = typeBuilder.DefineMethod(
                 "get_" + property.Name,
@@ -223,7 +235,7 @@ namespace RollerCaster
                 Type.EmptyTypes);
             ILGenerator getIl = getterBuilder.GetILGenerator();
 
-            if (!isWrappedObjectProperty)
+            if (specialFieldBuilder == null)
             {
                 getIl.Emit(OpCodes.Nop);
                 getIl.Emit(OpCodes.Ldarg_0);
@@ -235,11 +247,18 @@ namespace RollerCaster
                 getIl.Emit(property.PropertyType.GetTypeInfo().IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, property.PropertyType);
                 getIl.Emit(OpCodes.Ret);
             }
-            else
+            else if (specialFieldBuilder == wrappedObjectFieldBuilder)
             {
                 getIl.Emit(OpCodes.Nop);
                 getIl.Emit(OpCodes.Ldarg_0);
                 getIl.Emit(OpCodes.Ldfld, wrappedObjectFieldBuilder);
+                getIl.Emit(OpCodes.Ret);
+            }
+            else
+            {
+                getIl.Emit(OpCodes.Nop);
+                getIl.Emit(OpCodes.Ldarg_0);
+                getIl.Emit(OpCodes.Ldfld, currentCastedTypeFieldBuilder);
                 getIl.Emit(OpCodes.Ret);
             }
 

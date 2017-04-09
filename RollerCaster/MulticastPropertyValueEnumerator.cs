@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using RollerCaster.Reflection;
 
 namespace RollerCaster
 {
@@ -48,7 +49,7 @@ namespace RollerCaster
                         case 2:
                         {
                             var pair = (DictionaryEntry)item.Item2.Current;
-                            property = (type = (Type)pair.Key).GetTypeInfo().GetDeclaredProperty(propertyName);
+                            property = (type = (Type)pair.Key).FindProperty(propertyName);
                             break;
                         }
                     }

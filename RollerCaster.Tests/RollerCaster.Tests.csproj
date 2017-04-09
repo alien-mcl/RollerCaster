@@ -60,11 +60,13 @@
     <Compile Include="AssertionsExtensions.cs" />
     <Compile Include="Collections\DictionaryExtensions.cs" />
     <Compile Include="Collections\CollectionExtensions.cs" />
+    <Compile Include="Data\ISpecializedProduct.cs" />
     <Compile Include="Data\IThing.cs" />
     <Compile Include="Data\IProduct.cs" />
     <Compile Include="Data\SpecializedMulticastObject.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\MulticastObjectTest.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_adding_an_item_to_collection.cs" />
+    <Compile Include="Given_instance_of\MulticastObject_class\when_cloning.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_getting_a_property\which_is_a_reference_type.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_undoing_the_cast.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_iterating_through_properties_set.cs" />
@@ -86,6 +88,7 @@
     <Compile Include="Given_instance_of\SpecializedMulticastObject_class\when_getting_an_owned_property.cs" />
     <Compile Include="Given_instance_of\SpecializedMulticastObject_class\when_setting_an_owned_property.cs" />
     <Compile Include="Given_instance_of\TypeExtensions_class\when_creating_a_default_value.cs" />
+    <Compile Include="Given_instance_of\TypeExtensions_class\when_searching_for_property.cs" />
     <Compile Include="Given_instance_of\TypeExtensions_class\when_testing_for_a_dictionary_type.cs" />
     <Compile Include="Given_instance_of\TypeExtensions_class\when_obtaining_an_item_type.cs" />
     <Compile Include="Given_instance_of\TypeExtensions_class\when_testing_for_a_list_type.cs" />

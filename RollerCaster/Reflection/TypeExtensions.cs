@@ -209,6 +209,45 @@ namespace RollerCaster.Reflection
             return (typeInfo.IsGenericType ? type.GetGenericArguments()[0] : type);
         }
 
+        /// <summary>Finds a property in the given <paramref name="type" /> including it's implemented interfaces.</summary>
+        /// <param name="type">Type to search through.</param>
+        /// <param name="name">Property name to search for.</param>
+        /// <returns>Property matching a given <paramref name="name" /> or <b>null</b>.</returns>
+        public static PropertyInfo FindProperty(this Type type, string name)
+        {
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            if (name.Length == 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(name));
+            }
+
+            var result = type.GetProperty(name);
+            if (result != null)
+            {
+                return result;
+            }
+
+            foreach (var @interface in type.GetInterfaces())
+            {
+                result = @interface.GetProperty(name);
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+
+            return null;
+        }
+
         internal static void AddEnumerationValue(this Type valueType, IEnumerable currentValue, object value)
         {
             var add = currentValue.GetType().GetMethod("Add");
