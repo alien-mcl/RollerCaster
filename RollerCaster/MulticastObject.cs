@@ -10,7 +10,12 @@ using RollerCaster.Reflection;
 namespace RollerCaster
 {
     /// <summary>Representation of a multi-cast object.</summary>
-    public class MulticastObject : DynamicObject, ICloneable
+    public class MulticastObject : DynamicObject
+#if !NETSTANDARD1_4
+#pragma warning disable SA1001 // Commas must be spaced correctly
+        ,ICloneable
+#pragma warning restore SA1001 // Commas must be spaced correctly
+#endif
     {
         private static readonly Type ReferenceType = typeof(void);
 
@@ -193,13 +198,13 @@ namespace RollerCaster
         /// <summary>Clones this instance.</summary>
         /// <remarks>
         /// When deep-copying, only <see cref="MulticastObject" /> instances are deep copied.
-        /// If other instances are implementing <see cref="ICloneable" />, their <see cref="ICloneable.Clone()" /> implementations will be used;
+        /// If other instances are implementing <b>"ICloneable</b>, their implementations will be used;
         /// otherwise same instances are taken.</remarks>
         /// <param name="deepClone">Value indicating whether to make a deep copy.</param>
         /// <returns>Copy of this instance.</returns>
         public MulticastObject Clone(bool deepClone = false)
         {
-            var result = new MulticastObject();
+            var result = CreateChildInstance();
             if (!deepClone)
             {
                 foreach (var propertyValue in PropertyValues)
@@ -212,14 +217,30 @@ namespace RollerCaster
 
             var visitedObjects = new Dictionary<object, object>();
             visitedObjects[this] = result;
-            CloneInternal(this, result, visitedObjects);
+            this.CloneInternal(result, visitedObjects);
             return result;
         }
 
+#if !NETSTANDARD1_4
         /// <inheritdoc />
+        [ExcludeFromCodeCoverage]
+        [SuppressMessage("UnitTests", "TS000:NoUnitTests", Justification = "Method is a standard implemented wrapper around a tested method that has the logic.")]
         object ICloneable.Clone()
         {
             return Clone(true);
+        }
+#endif
+
+        internal MulticastObject CreateChildMulticastObject()
+        {
+            return CreateChildInstance();
+        }
+
+        /// <summary>Creates a new child instance used for clones.</summary>
+        /// <returns>Empty instance ready for cloned values.</returns>
+        protected virtual MulticastObject CreateChildInstance()
+        {
+            return new MulticastObject();
         }
 
         private static void ValidateArguments(Type objectType, string propertyName)
@@ -237,51 +258,6 @@ namespace RollerCaster
             if (propertyName.Length == 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(propertyName));
-            }
-        }
-
-        private static void CloneInternal(MulticastObject source, MulticastObject result, IDictionary<object, object> visitedObjects)
-        {
-            foreach (var propertyValue in source.PropertyValues)
-            {
-                if ((propertyValue.Property.PropertyType.IsValueType) || (propertyValue.Value == null))
-                {
-                    result.SetProperty(propertyValue.CastedType, propertyValue.Property.Name, propertyValue.Value);
-                    continue;
-                }
-
-                object targetValue = propertyValue.Value;
-                Type originalType = null;
-                MulticastObject multicastObject;
-                if (propertyValue.Value.TryUnwrap(out multicastObject))
-                {
-                    targetValue = multicastObject;
-                    originalType = (propertyValue.Value as IProxy).CurrentCastedType;
-                }
-
-                object instance;
-                if (!visitedObjects.TryGetValue(targetValue, out instance))
-                {
-                    if (multicastObject != null)
-                    {
-                        var newMulticastObject = new MulticastObject();
-                        visitedObjects.Add(multicastObject, instance = newMulticastObject);
-                        CloneInternal(multicastObject, newMulticastObject, visitedObjects);
-                    }
-                    else
-                    {
-                        var clonable = propertyValue.Value as ICloneable;
-                        visitedObjects.Add(propertyValue.Value, instance = clonable?.Clone() ?? propertyValue.Value);
-                    }
-                }
-
-                multicastObject = instance as MulticastObject;
-                if (multicastObject != null)
-                {
-                    instance = multicastObject.ActLike(originalType);
-                }
-
-                result.SetProperty(propertyValue.CastedType, propertyValue.Property.Name, instance);
             }
         }
 

@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using RollerCaster.Reflection;
 
 namespace RollerCaster
 {
@@ -72,6 +75,99 @@ namespace RollerCaster
             }
 
             multicastObject.SetProperty(objectType, propertyName, (object)value);
+        }
+
+        internal static void CloneInternal(this MulticastObject source, MulticastObject result, IDictionary<object, object> visitedObjects)
+        {
+            foreach (var propertyValue in source.PropertyValues)
+            {
+                if (propertyValue.Property.PropertyType.IsAnEnumerable())
+                {
+                    if (propertyValue.Property.PropertyType.IsADictionary())
+                    {
+                        source.CloneDictionary(result, propertyValue, visitedObjects);
+                        continue;
+                    }
+
+                    source.CloneCollection(result, propertyValue, visitedObjects);
+                    continue;
+                }
+
+                var newValue = source.CloneValue(propertyValue.Property.PropertyType, propertyValue.Value, visitedObjects);
+                result.SetProperty(propertyValue.CastedType, propertyValue.Property.Name, newValue);
+            }
+        }
+
+        private static void CloneDictionary(this MulticastObject source, MulticastObject result, MulticastPropertyValue propertyValue, IDictionary<object, object> visitedObjects)
+        {
+            var sourceDictionary = (IDictionary)propertyValue.Value;
+            foreach (var entry in sourceDictionary)
+            {
+                var newKey = source.CloneValue(propertyValue.Property.PropertyType, entry.GetType().GetProperty("Key").GetValue(entry), visitedObjects);
+                var newValue = source.CloneValue(propertyValue.Property.PropertyType, entry.GetType().GetProperty("Value").GetValue(entry), visitedObjects);
+                result.SetProperty(propertyValue.CastedType, propertyValue.Property.Name, new DictionaryEntry(newKey, newValue));
+            }
+        }
+
+        private static void CloneCollection(this MulticastObject source, MulticastObject result, MulticastPropertyValue propertyValue, IDictionary<object, object> visitedObjects)
+        {
+            var sourceCollection = (ICollection)propertyValue.Value;
+            foreach (var value in sourceCollection)
+            {
+                var newValue = source.CloneValue(propertyValue.Property.PropertyType, value, visitedObjects);
+                result.SetProperty(propertyValue.CastedType, propertyValue.Property.Name, newValue);
+            }
+        }
+
+        private static object CloneValue(this MulticastObject source, Type propertyType, object value, IDictionary<object, object> visitedObjects)
+        {
+            if ((propertyType.GetTypeInfo().IsValueType) || (value == null))
+            {
+                return value;
+            }
+
+            object targetValue = value;
+            Type originalType = null;
+            MulticastObject multicastObject;
+            if (value.TryUnwrap(out multicastObject))
+            {
+                targetValue = multicastObject;
+                originalType = (value as IProxy).CurrentCastedType;
+            }
+
+            object instance = CloneObject(source, targetValue, visitedObjects);
+            multicastObject = instance as MulticastObject;
+            if (multicastObject != null)
+            {
+                instance = multicastObject.ActLike(originalType);
+            }
+
+            return instance;
+        }
+
+        private static object CloneObject(this MulticastObject source, object targetValue, IDictionary<object, object> visitedObjects)
+        {
+            var multicastObject = targetValue as MulticastObject;
+            object instance;
+            if (visitedObjects.TryGetValue(targetValue, out instance))
+            {
+                return instance;
+            }
+
+            if (multicastObject != null)
+            {
+                var newMulticastObject = source.CreateChildMulticastObject();
+                visitedObjects.Add(multicastObject, instance = newMulticastObject);
+                CloneInternal(multicastObject, newMulticastObject, visitedObjects);
+                return instance;
+            }
+#if NETSTANDARD1_4
+            instance = targetValue;
+#else
+            var clonable = targetValue as ICloneable;
+            visitedObjects.Add(targetValue, instance = clonable?.Clone() ?? targetValue);
+#endif
+            return instance;
         }
     }
 }

@@ -206,7 +206,23 @@ namespace RollerCaster.Reflection
             }
 
             var typeInfo = type.GetTypeInfo();
-            return (typeInfo.IsGenericType ? type.GetGenericArguments()[0] : type);
+            if (!typeInfo.IsGenericType)
+            {
+                return type;
+            }
+
+            var genericTypeDefinition = typeInfo.GetGenericTypeDefinition();
+            if (genericTypeDefinition.GetInterfaces().Any(@interface => @interface == typeof(IDictionary<,>)))
+            {
+                return typeof(KeyValuePair<,>).MakeGenericType(type.GetGenericArguments());
+            }
+
+            if (genericTypeDefinition.GetInterfaces().Any(@interface => @interface == typeof(IDictionary)))
+            {
+                return typeof(DictionaryEntry);
+            }
+
+            return type.GetGenericArguments()[0];
         }
 
         /// <summary>Finds a property in the given <paramref name="type" /> including it's implemented interfaces.</summary>
@@ -250,29 +266,30 @@ namespace RollerCaster.Reflection
 
         internal static void AddEnumerationValue(this Type valueType, IEnumerable currentValue, object value)
         {
-            var add = currentValue.GetType().GetMethod("Add");
+            var add = currentValue.GetType().GetMethod("Add") ?? currentValue.GetAddMethod(valueType);
             currentValue.Add(add, valueType.IsADictionary(), value);
         }
 
-        [SuppressMessage("Microsoft.Globalization", "CA1307:SpecifyStringComparison", MessageId = "System.String.EndsWith(System.String)", Justification = "String is culture invariant.")]
+        [SuppressMessage("Microsoft.Globalization", "CA1307:SpecifyStringComparison", Justification = "String is culture invariant.")]
         internal static void CopyEnumeration(this Type valueType, IEnumerable currentValue, IEnumerable value)
         {
             var currentValueTypeInfo = currentValue.GetType();
-            var add = currentValueTypeInfo.GetMethod("Add");
-            if (add == null)
-            {
-                add = (from method in valueType.GetRuntimeMethods()
-                       where method.Name == "Add" || method.Name.EndsWith(".Add")
-                       from parameter in method.GetParameters()
-                       join genericType in currentValueTypeInfo.GenericTypeArguments on parameter.ParameterType equals genericType into parameters
-                       select method).First();
-            }
-
+            var add = currentValueTypeInfo.GetMethod("Add") ?? currentValue.GetAddMethod(valueType);
             bool isDictionary = valueType.IsADictionary();
             foreach (var item in value)
             {
                 currentValue.Add(add, isDictionary, item);
             }
+        }
+
+        [SuppressMessage("Microsoft.Globalization", "CA1307:SpecifyStringComparison", Justification = "String is culture invariant.")]
+        private static MethodInfo GetAddMethod(this object collection, Type valueType)
+        {
+            return (from method in valueType.GetRuntimeMethods()
+                where method.Name == "Add" || method.Name.EndsWith(".Add")
+                from parameter in method.GetParameters()
+                join genericType in collection.GetType().GenericTypeArguments on parameter.ParameterType equals genericType into parameters
+                select method).First();
         }
 
         private static void Add(this IEnumerable currentValue, MethodInfo add, bool isDictionary, object value)

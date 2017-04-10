@@ -8,7 +8,7 @@ using RollerCaster.Data;
 namespace Given_instance_of.MulticastObject_class
 {
     [TestFixture]
-    public class when_cloning : MulticastObjectTest
+    public class when_deep_cloning : MulticastObjectTest
     {
         private ISpecializedProduct Expected { get; set; }
 
@@ -16,7 +16,7 @@ namespace Given_instance_of.MulticastObject_class
 
         public override void TheTest()
         {
-            Result = Expected.Unwrap().Clone().ActLike<ISpecializedProduct>();
+            Result = Expected.Unwrap().Clone(true).ActLike<ISpecializedProduct>();
         }
 
         [Test]
@@ -32,21 +32,21 @@ namespace Given_instance_of.MulticastObject_class
         }
 
         [Test]
-        public void Should_not_copy_multicast_object_instance()
+        public void Should_copy_multicast_object_instance()
         {
-            Result.Related.Unwrap().Should().Be(Expected.Related.Unwrap());
+            Result.Related.Name.Should().Be(Expected.Related.Name);
         }
 
         [Test]
         public void Should_prevent_loop_while_cloning()
         {
-            Result.Related.Related.Unwrap().Should().Be(Expected.Unwrap());
+            Result.Related.Related.Unwrap().Should().Be(Result.Unwrap());
         }
 
         [Test]
         public void Should_clone_dictionary_values_correctly()
         {
-            Result.Similar.Should().HaveCount(1).And.Subject.First().Value.Unwrap().Should().Be(Expected.Related.Unwrap());
+            Result.Similar.Should().HaveCount(1).And.Subject.First().Value.Name.Should().Be(Expected.Related.Name);
         }
 
         [Test]
