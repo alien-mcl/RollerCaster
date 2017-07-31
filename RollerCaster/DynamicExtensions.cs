@@ -29,14 +29,14 @@ namespace RollerCaster
                 switch (method.Name)
                 {
                     case "GetProperty":
-                        if (!method.IsGenericMethod)
+                        if (method.GetParameters().Length == 2)
                         {
                             GetPropertyMethodInfo = method;
                         }
 
                         break;
                     case "SetProperty":
-                        if (!method.IsGenericMethod)
+                        if (method.GetParameters().Length == 3)
                         {
                             SetPropertyMethodInfo = method;
                         }

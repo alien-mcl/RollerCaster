@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using RollerCaster.Reflection;
 
 namespace RollerCaster
 {
@@ -31,7 +30,6 @@ namespace RollerCaster
 
                 Type type = null;
                 PropertyInfo property = null;
-                string propertyName = null;
                 object value = null;
                 int index = 0;
                 foreach (var item in _stack)
@@ -41,7 +39,7 @@ namespace RollerCaster
                         case 0:
                         {
                             var pair = (DictionaryEntry)item.Item2.Current;
-                            propertyName = (string)pair.Key;
+                            property = (PropertyInfo)pair.Key;
                             value = pair.Value;
                             break;
                         }
@@ -49,7 +47,7 @@ namespace RollerCaster
                         case 2:
                         {
                             var pair = (DictionaryEntry)item.Item2.Current;
-                            property = (type = (Type)pair.Key).FindProperty(propertyName);
+                            type = (Type)pair.Key;
                             break;
                         }
                     }

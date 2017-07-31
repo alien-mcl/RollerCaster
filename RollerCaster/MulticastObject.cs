@@ -23,7 +23,7 @@ namespace RollerCaster
         public MulticastObject()
         {
             Sync = new Object();
-            Properties = new Dictionary<Type, Dictionary<Type, Dictionary<string, object>>>();
+            Properties = new Dictionary<Type, Dictionary<Type, Dictionary<PropertyInfo, object>>>();
             Types = new HashSet<Type>();
         }
 
@@ -33,7 +33,7 @@ namespace RollerCaster
         /// <summary>Gets a collection of property values.</summary>
         public virtual IEnumerable<MulticastPropertyValue> PropertyValues { get { return new MulticastPropertyValueCollection(this); } }
 
-        internal Dictionary<Type, Dictionary<Type, Dictionary<string, object>>> Properties { get; }
+        internal Dictionary<Type, Dictionary<Type, Dictionary<PropertyInfo, object>>> Properties { get; }
 
         internal HashSet<Type> Types { get; }
 
@@ -51,41 +51,24 @@ namespace RollerCaster
         {
             ValidateArguments(objectType, propertyName);
             Types.Add(objectType);
-            var existingProperty = GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
-            if ((existingProperty != null) && (existingProperty.CanRead))
+            return GetPhysicalProperty(propertyName) ?? GetProperty(objectType, objectType.FindProperty(propertyName));
+        }
+
+        /// <summary>Gets the property value.</summary>
+        /// <param name="propertyInfo">Property to obtain value of.</param>
+        /// <returns>
+        /// Value of the property in case it is set or <b>default</b> for a given property's value type.
+        /// Types based on <see cref="IEnumerable" /> except <see cref="String" /> and <see cref="Byte" />[] are created on the fly.
+        /// </returns>
+        public virtual object GetProperty(PropertyInfo propertyInfo)
+        {
+            if (propertyInfo == null)
             {
-                return existingProperty.GetValue(this);
+                throw new ArgumentNullException(nameof(propertyInfo));
             }
 
-            var propertyType = objectType.FindProperty(propertyName).PropertyType;
-            var valueType = propertyType;
-            if (valueType.IsAnEnumerable())
-            {
-                return GetEnumerableProperty(objectType, valueType, propertyName);
-            }
-
-            if (!valueType.GetTypeInfo().IsValueType)
-            {
-                valueType = ReferenceType;
-            }
-
-            lock (Sync)
-            {
-                Dictionary<Type, Dictionary<string, object>> entityTypeProperties;
-                if (!Properties.TryGetValue(objectType, out entityTypeProperties))
-                {
-                    return propertyType.GetDefaultValue();
-                }
-
-                Dictionary<string, object> typeProperties;
-                if (!entityTypeProperties.TryGetValue(valueType, out typeProperties))
-                {
-                    return propertyType.GetDefaultValue();
-                }
-
-                object value;
-                return (!typeProperties.TryGetValue(propertyName, out value) ? propertyType.GetDefaultValue() : value);
-            }
+            Types.Add(propertyInfo.DeclaringType);
+            return GetPhysicalProperty(propertyInfo.Name) ?? GetProperty(propertyInfo.DeclaringType, propertyInfo);
         }
 
         /// <summary>Sets the property value.</summary>
@@ -96,47 +79,26 @@ namespace RollerCaster
         {
             ValidateArguments(objectType, propertyName);
             Types.Add(objectType);
-            var existingProperty = GetType().GetProperty(propertyName);
-            if ((existingProperty != null) && (existingProperty.CanWrite))
+            if (!SetPhysicalProperty(propertyName, value))
             {
-                existingProperty.SetValue(this, value);
-                return;
+                SetProperty(objectType, objectType.FindProperty(propertyName), value);
+            }
+        }
+
+        /// <summary>Sets the property value.</summary>
+        /// <param name="propertyInfo">Property to set value of.</param>
+        /// <param name="value">The value to be set.</param>
+        public virtual void SetProperty(PropertyInfo propertyInfo, object value)
+        {
+            if (propertyInfo == null)
+            {
+                throw new ArgumentNullException(nameof(propertyInfo));
             }
 
-            var valueType = objectType.FindProperty(propertyName).PropertyType;
-            if (valueType.IsAnEnumerable())
+            Types.Add(propertyInfo.DeclaringType);
+            if (!SetPhysicalProperty(propertyInfo.Name, value))
             {
-                SetEnumerableProperty(objectType, valueType, propertyName, value);
-                return;
-            }
-
-            if (!valueType.GetTypeInfo().IsValueType)
-            {
-                valueType = ReferenceType;
-            }
-
-            lock (Sync)
-            {
-                Dictionary<Type, Dictionary<string, object>> entityTypeProperties;
-                if (!Properties.TryGetValue(objectType, out entityTypeProperties))
-                {
-                    Properties[objectType] = entityTypeProperties = new Dictionary<Type, Dictionary<string, object>>();
-                }
-
-                Dictionary<string, object> typeProperties;
-                if (!entityTypeProperties.TryGetValue(valueType, out typeProperties))
-                {
-                    entityTypeProperties[valueType] = typeProperties = new Dictionary<string, object>();
-                }
-
-                if (value == null)
-                {
-                    typeProperties.Remove(propertyName);
-                }
-                else
-                {
-                    typeProperties[propertyName] = value;
-                }
+                SetProperty(propertyInfo.DeclaringType, propertyInfo, value);
             }
         }
 
@@ -145,19 +107,20 @@ namespace RollerCaster
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
             result = null;
-            var objectType = (from type in Properties
-                              from alignment in type.Value
-                              from property in alignment.Value
-                              where property.Key == binder.Name
-                              select type.Key).FirstOrDefault();
-            if (objectType == null)
+            var propertyInfo = (
+                from type in Properties
+                from alignment in type.Value
+                from property in alignment.Value
+                where property.Key.Name == binder.Name
+                select property.Key).FirstOrDefault();
+            if (propertyInfo == null)
             {
                 return false;
             }
 
             try
             {
-                result = GetProperty(objectType, binder.Name);
+                result = GetProperty(propertyInfo);
                 return true;
             }
             catch
@@ -172,19 +135,20 @@ namespace RollerCaster
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "This method is supposed to try do something. Suppression is OK here.")]
         public override bool TrySetMember(SetMemberBinder binder, object value)
         {
-            var objectType = (from type in Properties
-                              from alignment in type.Value
-                              from property in alignment.Value
-                              where property.Key == binder.Name
-                              select type.Key).FirstOrDefault();
-            if (objectType == null)
+            var propertyInfo = (
+                from type in Properties
+                from alignment in type.Value
+                from property in alignment.Value
+                where property.Key.Name == binder.Name
+                select property.Key).FirstOrDefault();
+            if (propertyInfo == null)
             {
                 return false;
             }
 
             try
             {
-                SetProperty(objectType, binder.Name, value);
+                SetProperty(propertyInfo, value);
                 return true;
             }
             catch
@@ -261,52 +225,146 @@ namespace RollerCaster
             }
         }
 
-        private object GetEnumerableProperty(Type objectType, Type valueType, string propertyName)
+        private object GetPhysicalProperty(string propertyName)
         {
+            var existingProperty = GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+            if ((existingProperty != null) && (existingProperty.CanRead))
+            {
+                return existingProperty.GetValue(this);
+            }
+
+            return null;
+        }
+
+        private object GetProperty(Type objectType, PropertyInfo propertyInfo)
+        {
+            var valueType = propertyInfo.PropertyType;
+            if (valueType.IsAnEnumerable())
+            {
+                return GetEnumerableProperty(objectType, valueType, propertyInfo);
+            }
+
+            if (!valueType.GetTypeInfo().IsValueType)
+            {
+                valueType = ReferenceType;
+            }
+
             lock (Sync)
             {
-                Dictionary<Type, Dictionary<string, object>> entityTypeProperties;
+                Dictionary<Type, Dictionary<PropertyInfo, object>> entityTypeProperties;
                 if (!Properties.TryGetValue(objectType, out entityTypeProperties))
                 {
-                    Properties[objectType] = entityTypeProperties = new Dictionary<Type, Dictionary<string, object>>();
+                    return propertyInfo.PropertyType.GetDefaultValue();
                 }
 
-                Dictionary<string, object> typeProperties;
-                if (!entityTypeProperties.TryGetValue(ReferenceType, out typeProperties))
+                Dictionary<PropertyInfo, object> typeProperties;
+                if (!entityTypeProperties.TryGetValue(valueType, out typeProperties))
                 {
-                    entityTypeProperties[ReferenceType] = typeProperties = new Dictionary<string, object>();
+                    return propertyInfo.PropertyType.GetDefaultValue();
                 }
 
                 object value;
-                if (!typeProperties.TryGetValue(propertyName, out value))
+                return (!typeProperties.TryGetValue(propertyInfo, out value) ? propertyInfo.PropertyType.GetDefaultValue() : value);
+            }
+        }
+
+        private bool SetPhysicalProperty(string propertyName, object value)
+        {
+            var existingProperty = GetType().GetProperty(propertyName);
+            if ((existingProperty == null) || (!existingProperty.CanWrite))
+            {
+                return false;
+            }
+
+            existingProperty.SetValue(this, value);
+            return true;
+        }
+
+        private void SetProperty(Type objectType, PropertyInfo propertyInfo, object value)
+        {
+            var valueType = propertyInfo.PropertyType;
+            if (valueType.IsAnEnumerable())
+            {
+                SetEnumerableProperty(objectType, valueType, propertyInfo, value);
+                return;
+            }
+
+            if (!valueType.GetTypeInfo().IsValueType)
+            {
+                valueType = ReferenceType;
+            }
+
+            lock (Sync)
+            {
+                Dictionary<Type, Dictionary<PropertyInfo, object>> entityTypeProperties;
+                if (!Properties.TryGetValue(objectType, out entityTypeProperties))
                 {
-                    typeProperties[propertyName] = value = valueType.GetDefaultValue();
+                    Properties[objectType] = entityTypeProperties = new Dictionary<Type, Dictionary<PropertyInfo, object>>();
+                }
+
+                Dictionary<PropertyInfo, object> typeProperties;
+                if (!entityTypeProperties.TryGetValue(valueType, out typeProperties))
+                {
+                    entityTypeProperties[valueType] = typeProperties = new Dictionary<PropertyInfo, object>();
+                }
+
+                if (value == null)
+                {
+                    typeProperties.Remove(propertyInfo);
+                }
+                else
+                {
+                    typeProperties[propertyInfo] = value;
+                }
+            }
+        }
+
+        private object GetEnumerableProperty(Type objectType, Type valueType, PropertyInfo propertyInfo)
+        {
+            lock (Sync)
+            {
+                Dictionary<Type, Dictionary<PropertyInfo, object>> entityTypeProperties;
+                if (!Properties.TryGetValue(objectType, out entityTypeProperties))
+                {
+                    Properties[objectType] = entityTypeProperties = new Dictionary<Type, Dictionary<PropertyInfo, object>>();
+                }
+
+                Dictionary<PropertyInfo, object> typeProperties;
+                if (!entityTypeProperties.TryGetValue(ReferenceType, out typeProperties))
+                {
+                    entityTypeProperties[ReferenceType] = typeProperties = new Dictionary<PropertyInfo, object>();
+                }
+
+                object value;
+                if (!typeProperties.TryGetValue(propertyInfo, out value))
+                {
+                    typeProperties[propertyInfo] = value = valueType.GetDefaultValue();
                 }
 
                 return value;
             }
         }
 
-        private void SetEnumerableProperty(Type objectType, Type valueType, string propertyName, object value)
+        private void SetEnumerableProperty(Type objectType, Type valueType, PropertyInfo propertyInfo, object value)
         {
             lock (Sync)
             {
-                Dictionary<Type, Dictionary<string, object>> entityTypeProperties;
+                Dictionary<Type, Dictionary<PropertyInfo, object>> entityTypeProperties;
                 if (!Properties.TryGetValue(objectType, out entityTypeProperties))
                 {
-                    Properties[objectType] = entityTypeProperties = new Dictionary<Type, Dictionary<string, object>>();
+                    Properties[objectType] = entityTypeProperties = new Dictionary<Type, Dictionary<PropertyInfo, object>>();
                 }
 
-                Dictionary<string, object> typeProperties;
+                Dictionary<PropertyInfo, object> typeProperties;
                 if (!entityTypeProperties.TryGetValue(ReferenceType, out typeProperties))
                 {
-                    entityTypeProperties[ReferenceType] = typeProperties = new Dictionary<string, object>();
+                    entityTypeProperties[ReferenceType] = typeProperties = new Dictionary<PropertyInfo, object>();
                 }
 
                 object currentValue;
-                if (!typeProperties.TryGetValue(propertyName, out currentValue))
+                if (!typeProperties.TryGetValue(propertyInfo, out currentValue))
                 {
-                    typeProperties[propertyName] = currentValue = valueType.GetDefaultValue();
+                    typeProperties[propertyInfo] = currentValue = valueType.GetDefaultValue();
                 }
 
                 var enumerable = (IEnumerable)currentValue;
