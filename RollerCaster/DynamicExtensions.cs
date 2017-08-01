@@ -104,6 +104,25 @@ namespace RollerCaster
             return true;
         }
 
+        /// <summary>Provides a given <paramref name="instance" /> as a dynamic object.</summary>
+        /// <param name="instance">Object to be made dynamic.</param>
+        /// <returns>Dynamic object.</returns>
+        public static dynamic AsDynamic(this object instance)
+        {
+            if (instance == null)
+            {
+                return null;
+            }
+
+            MulticastObject multicastObject;
+            if (instance.TryUnwrap(out multicastObject))
+            {
+                return multicastObject;
+            }
+
+            return instance;
+        }
+
         /// <summary>Dynamically casts a given <paramref name="instance" /> to an interface of type <paramref name="type" />.</summary>
         /// <remarks>This method is intended to be used with data contract like interfaces without any methods or logic.</remarks>
         /// <param name="instance">Object to be casted.</param>

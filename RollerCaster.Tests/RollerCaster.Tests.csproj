@@ -64,12 +64,13 @@
     <Compile Include="Data\IThing.cs" />
     <Compile Include="Data\IProduct.cs" />
     <Compile Include="Data\SpecializedMulticastObject.cs" />
+    <Compile Include="Given_instance_of\DynamicObject_class\when_getting_property.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\MulticastObjectTest.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_adding_an_item_to_collection.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_cloning.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_deep_cloning.cs" />
-    <Compile Include="Given_instance_of\MulticastObject_class\when_getting_a_property\which_is_a_reference_type\by_property.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_getting_a_property\which_is_a_reference_type\by_name.cs" />
+    <Compile Include="Given_instance_of\MulticastObject_class\when_getting_a_property\which_is_a_reference_type\by_property.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_setting_a_property\which_is_a_reference_type\by_property.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_undoing_the_cast.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_iterating_through_properties_set.cs" />
@@ -87,6 +88,7 @@
     <Compile Include="Given_instance_of\MulticastObject_class\when_getting_a_property\and_something_is_missing.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_working_as_dynamic.cs" />
     <Compile Include="Given_instance_of\MulticastPropertyValue_class\when_comparing.cs" />
+    <Compile Include="Given_instance_of\ProxyBase_class\when_getting_property.cs" />
     <Compile Include="Given_instance_of\SpecializedMulticastObject_class\SpecializedMulticastObjectTest.cs" />
     <Compile Include="Given_instance_of\SpecializedMulticastObject_class\when_getting_an_owned_property.cs" />
     <Compile Include="Given_instance_of\SpecializedMulticastObject_class\when_setting_an_owned_property.cs" />

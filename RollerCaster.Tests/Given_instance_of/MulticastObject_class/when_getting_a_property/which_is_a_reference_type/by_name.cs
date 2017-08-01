@@ -15,13 +15,13 @@ namespace Given_instance_of.MulticastObject_class.when_getting_a_property.which_
         [Test]
         public void Should_obtain_value_of_that_property()
         {
-            MulticastObject.GetProperty(typeof(IProduct).GetProperty("Name")).Should().Be(ExpectedValue);
+            MulticastObject.GetProperty<IProduct, string>("Name").Should().Be(ExpectedValue);
         }
 
         [Test]
         public void Should_obtain_a_default_value_if_nothing_was_set()
         {
-            new MulticastObject().GetProperty(typeof(IProduct).GetProperty("Name")).Should().BeNull();
+            new MulticastObject().GetProperty<IProduct, string>("Name").Should().BeNull();
         }
 
         [Test]
