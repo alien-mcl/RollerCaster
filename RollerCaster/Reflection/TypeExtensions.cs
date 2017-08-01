@@ -228,8 +228,9 @@ namespace RollerCaster.Reflection
         /// <summary>Finds a property in the given <paramref name="type" /> including it's implemented interfaces.</summary>
         /// <param name="type">Type to search through.</param>
         /// <param name="name">Property name to search for.</param>
+        /// <param name="propertyType">Optional property type.</param>
         /// <returns>Property matching a given <paramref name="name" /> or <b>null</b>.</returns>
-        public static PropertyInfo FindProperty(this Type type, string name)
+        public static PropertyInfo FindProperty(this Type type, string name, Type propertyType = null)
         {
             if (type == null)
             {
@@ -246,7 +247,7 @@ namespace RollerCaster.Reflection
                 throw new ArgumentOutOfRangeException(nameof(name));
             }
 
-            var result = type.GetProperty(name);
+            var result = (propertyType != null ? type.GetProperty(name, propertyType) : type.GetProperty(name));
             if (result != null)
             {
                 return result;
@@ -254,7 +255,7 @@ namespace RollerCaster.Reflection
 
             foreach (var @interface in type.GetInterfaces())
             {
-                result = @interface.GetProperty(name);
+                result = (propertyType != null ? @interface.GetProperty(name, propertyType) : @interface.GetProperty(name));
                 if (result != null)
                 {
                     return result;

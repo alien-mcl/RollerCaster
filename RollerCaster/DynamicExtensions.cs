@@ -24,24 +24,29 @@ namespace RollerCaster
         [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline", Justification = "Unified initialization of values based on the same collection.")]
         static DynamicExtensions()
         {
-            foreach (var method in typeof(MulticastObject).GetMethods())
+            foreach (var method in typeof(MulticastObject).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
                 switch (method.Name)
                 {
                     case "GetProperty":
-                        if (method.GetParameters().Length == 2)
+                        if (method.GetParameters().Length == 3)
                         {
                             GetPropertyMethodInfo = method;
                         }
 
                         break;
                     case "SetProperty":
-                        if (method.GetParameters().Length == 3)
+                        if (method.GetParameters().Length == 4)
                         {
                             SetPropertyMethodInfo = method;
                         }
 
                         break;
+                }
+
+                if ((GetPropertyMethodInfo != null) && (SetPropertyMethodInfo != null))
+                {
+                    break;
                 }
             }
         }
@@ -242,6 +247,8 @@ namespace RollerCaster
                 getIl.Emit(OpCodes.Ldfld, wrappedObjectFieldBuilder);
                 getIl.Emit(OpCodes.Ldtoken, castedType);
                 getIl.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
+                getIl.Emit(OpCodes.Ldtoken, property.PropertyType);
+                getIl.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
                 getIl.Emit(OpCodes.Ldstr, property.Name);
                 getIl.Emit(OpCodes.Callvirt, GetPropertyMethodInfo);
                 getIl.Emit(property.PropertyType.GetTypeInfo().IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, property.PropertyType);
@@ -285,6 +292,8 @@ namespace RollerCaster
             setIl.Emit(OpCodes.Ldarg_0);
             setIl.Emit(OpCodes.Ldfld, wrappedObjectFieldBuilder);
             setIl.Emit(OpCodes.Ldtoken, castedType);
+            setIl.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
+            setIl.Emit(OpCodes.Ldtoken, property.PropertyType);
             setIl.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
             setIl.Emit(OpCodes.Ldstr, property.Name);
             setIl.Emit(OpCodes.Ldarg_1);

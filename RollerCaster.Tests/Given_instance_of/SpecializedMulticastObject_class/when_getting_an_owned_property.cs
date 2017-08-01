@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System.Reflection;
+using FluentAssertions;
 using NUnit.Framework;
 using RollerCaster.Data;
 
@@ -13,7 +14,7 @@ namespace Given_instance_of.SpecializedMulticastObject_class
 
         public override void TheTest()
         {
-            Result = MulticastObject.GetProperty(typeof(IProduct), "Id");
+            Result = MulticastObject.GetProperty(typeof(SpecializedMulticastObject).GetTypeInfo().GetProperty("Id"));
         }
 
         [Test]
@@ -24,7 +25,7 @@ namespace Given_instance_of.SpecializedMulticastObject_class
 
         protected override void ScenarioSetup()
         {
-            MulticastObject.SetProperty(typeof(IProduct), "Id", ExpectedId);
+            MulticastObject.SetProperty(typeof(SpecializedMulticastObject).GetTypeInfo().GetProperty("Id"), ExpectedId);
         }
     }
 }

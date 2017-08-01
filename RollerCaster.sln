@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26228.9
+VisualStudioVersion = 15.0.26430.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RollerCaster.Tests", "RollerCaster.Tests\RollerCaster.Tests.csproj", "{0C8B7D0D-CC70-45E7-B1F3-5E303E5269C9}"
 EndProject
@@ -16,7 +16,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".config", ".config", "{862B227A-CA21-4272-9E78-48ACD565CED3}"
 	ProjectSection(SolutionItems) = preProject
 		LICENCE.md = LICENCE.md
+		RollerCaster.DotSettings = RollerCaster.DotSettings
 		RollerCaster.ruleset = RollerCaster.ruleset
+		RollerCaster.sln.DotSettings = RollerCaster.sln.DotSettings
 		RollerCaster.Tests.ruleset = RollerCaster.Tests.ruleset
 	EndProjectSection
 EndProject

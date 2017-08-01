@@ -22,26 +22,35 @@ namespace RollerCaster
         [SuppressMessage("Microsoft.Design", "CA1004:GenericMethodsShouldProvideTypeParameter", Justification = "There is a need to cover all required scenarios.")]
         public static TProperty GetProperty<TObject, TProperty>(this MulticastObject multicastObject, string propertyName)
         {
-            return multicastObject.GetProperty<TProperty>(typeof(TObject), propertyName);
+            if (propertyName == null)
+            {
+                throw new ArgumentNullException(nameof(propertyName));
+            }
+
+            if (propertyName.Length == 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(propertyName));
+            }
+
+            return multicastObject.GetProperty<TProperty>(typeof(TObject).FindProperty(propertyName));
         }
 
         /// <summary>Gets the property value.</summary>
         /// <typeparam name="TProperty">The type of the property.</typeparam>
         /// <param name="multicastObject">Target <see cref="MulticastObject" /> instance.</param>
-        /// <param name="objectType">The type of the object.</param>
-        /// <param name="propertyName">Name of the property.</param>
+        /// <param name="propertyInfo">Property to obtain value for.</param>
         /// <returns>
         /// Value of the property in case it is set or <b>default</b> for a given property's value type.
         /// Types based on <see cref="IEnumerable" /> except <see cref="String" /> and <see cref="Byte" />[] are created on the fly.
         /// </returns>
-        public static TProperty GetProperty<TProperty>(this MulticastObject multicastObject, Type objectType, string propertyName)
+        public static TProperty GetProperty<TProperty>(this MulticastObject multicastObject, PropertyInfo propertyInfo)
         {
             if (multicastObject == null)
             {
                 throw new ArgumentNullException(nameof(multicastObject));
             }
 
-            return (TProperty)multicastObject.GetProperty(objectType, propertyName);
+            return (TProperty)multicastObject.GetProperty(propertyInfo);
         }
 
         /// <summary>Sets the property value.</summary>
@@ -53,28 +62,32 @@ namespace RollerCaster
         [SuppressMessage("Microsoft.Design", "CA1004:GenericMethodsShouldProvideTypeParameter", Justification = "There is a need to cover all required scenarios.")]
         public static void SetProperty<TObject, TProperty>(this MulticastObject multicastObject, string propertyName, TProperty value)
         {
-            if (multicastObject == null)
+            if (propertyName == null)
             {
-                throw new ArgumentNullException(nameof(multicastObject));
+                throw new ArgumentNullException(nameof(propertyName));
             }
 
-            multicastObject.SetProperty<TProperty>(typeof(TObject), propertyName, value);
+            if (propertyName.Length == 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(propertyName));
+            }
+
+            multicastObject.SetProperty<TProperty>(typeof(TObject).FindProperty(propertyName), value);
         }
 
         /// <summary>Sets the property value.</summary>
         /// <typeparam name="TProperty">The type of the property.</typeparam>
         /// <param name="multicastObject">Target <see cref="MulticastObject" /> instance.</param>
-        /// <param name="objectType">Type of the entity.</param>
-        /// <param name="propertyName">Name of the property.</param>
+        /// <param name="propertyInfo">Property to set value of.</param>
         /// <param name="value">The value to be set.</param>
-        public static void SetProperty<TProperty>(this MulticastObject multicastObject, Type objectType, string propertyName, TProperty value)
+        public static void SetProperty<TProperty>(this MulticastObject multicastObject, PropertyInfo propertyInfo, TProperty value)
         {
             if (multicastObject == null)
             {
                 throw new ArgumentNullException(nameof(multicastObject));
             }
 
-            multicastObject.SetProperty(objectType, propertyName, (object)value);
+            multicastObject.SetProperty(propertyInfo, value);
         }
 
         internal static void CloneInternal(this MulticastObject source, MulticastObject result, IDictionary<object, object> visitedObjects)
@@ -94,7 +107,7 @@ namespace RollerCaster
                 }
 
                 var newValue = source.CloneValue(propertyValue.Property.PropertyType, propertyValue.Value, visitedObjects);
-                result.SetProperty(propertyValue.CastedType, propertyValue.Property.Name, newValue);
+                result.SetProperty(propertyValue.Property, newValue);
             }
         }
 
@@ -105,7 +118,7 @@ namespace RollerCaster
             {
                 var newKey = source.CloneValue(propertyValue.Property.PropertyType, entry.GetType().GetProperty("Key").GetValue(entry), visitedObjects);
                 var newValue = source.CloneValue(propertyValue.Property.PropertyType, entry.GetType().GetProperty("Value").GetValue(entry), visitedObjects);
-                result.SetProperty(propertyValue.CastedType, propertyValue.Property.Name, new DictionaryEntry(newKey, newValue));
+                result.SetProperty(propertyValue.Property, new DictionaryEntry(newKey, newValue));
             }
         }
 
@@ -115,7 +128,7 @@ namespace RollerCaster
             foreach (var value in sourceCollection)
             {
                 var newValue = source.CloneValue(propertyValue.Property.PropertyType, value, visitedObjects);
-                result.SetProperty(propertyValue.CastedType, propertyValue.Property.Name, newValue);
+                result.SetProperty(propertyValue.Property, newValue);
             }
         }
 

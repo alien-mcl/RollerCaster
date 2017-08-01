@@ -54,7 +54,7 @@ namespace Given_instance_of.MulticastObject_class
         {
             foreach (var propertyValue in ExpectedProperties)
             {
-                MulticastObject.SetProperty(propertyValue.Property.DeclaringType, propertyValue.Property.Name, propertyValue.Value);
+                MulticastObject.SetProperty(propertyValue.Property, propertyValue.Value);
             }
         }
     }

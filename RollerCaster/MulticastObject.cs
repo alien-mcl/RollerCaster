@@ -41,20 +41,6 @@ namespace RollerCaster
         protected object Sync { get; }
 
         /// <summary>Gets the property value.</summary>
-        /// <param name="objectType">The type of the object.</param>
-        /// <param name="propertyName">Name of the property.</param>
-        /// <returns>
-        /// Value of the property in case it is set or <b>default</b> for a given property's value type.
-        /// Types based on <see cref="IEnumerable" /> except <see cref="String" /> and <see cref="Byte" />[] are created on the fly.
-        /// </returns>
-        public virtual object GetProperty(Type objectType, string propertyName)
-        {
-            ValidateArguments(objectType, propertyName);
-            Types.Add(objectType);
-            return GetPhysicalProperty(propertyName) ?? GetProperty(objectType, objectType.FindProperty(propertyName));
-        }
-
-        /// <summary>Gets the property value.</summary>
         /// <param name="propertyInfo">Property to obtain value of.</param>
         /// <returns>
         /// Value of the property in case it is set or <b>default</b> for a given property's value type.
@@ -67,21 +53,40 @@ namespace RollerCaster
                 throw new ArgumentNullException(nameof(propertyInfo));
             }
 
-            Types.Add(propertyInfo.DeclaringType);
-            return GetPhysicalProperty(propertyInfo.Name) ?? GetProperty(propertyInfo.DeclaringType, propertyInfo);
-        }
-
-        /// <summary>Sets the property value.</summary>
-        /// <param name="objectType">Type of the entity.</param>
-        /// <param name="propertyName">Name of the property.</param>
-        /// <param name="value">The value to be set.</param>
-        public virtual void SetProperty(Type objectType, string propertyName, object value)
-        {
-            ValidateArguments(objectType, propertyName);
-            Types.Add(objectType);
-            if (!SetPhysicalProperty(propertyName, value))
+            var result = GetPhysicalProperty(propertyInfo.Name);
+            if (result != null)
             {
-                SetProperty(objectType, objectType.FindProperty(propertyName), value);
+                return result;
+            }
+
+            Types.Add(propertyInfo.DeclaringType);
+            var valueType = propertyInfo.PropertyType;
+            if (valueType.IsAnEnumerable())
+            {
+                return GetEnumerableProperty(valueType, propertyInfo);
+            }
+
+            if (!valueType.GetTypeInfo().IsValueType)
+            {
+                valueType = ReferenceType;
+            }
+
+            lock (Sync)
+            {
+                Dictionary<Type, Dictionary<PropertyInfo, object>> entityTypeProperties;
+                if (!Properties.TryGetValue(propertyInfo.DeclaringType, out entityTypeProperties))
+                {
+                    return propertyInfo.PropertyType.GetDefaultValue();
+                }
+
+                Dictionary<PropertyInfo, object> typeProperties;
+                if (!entityTypeProperties.TryGetValue(valueType, out typeProperties))
+                {
+                    return propertyInfo.PropertyType.GetDefaultValue();
+                }
+
+                object value;
+                return (!typeProperties.TryGetValue(propertyInfo, out value) ? propertyInfo.PropertyType.GetDefaultValue() : value);
             }
         }
 
@@ -95,10 +100,46 @@ namespace RollerCaster
                 throw new ArgumentNullException(nameof(propertyInfo));
             }
 
-            Types.Add(propertyInfo.DeclaringType);
-            if (!SetPhysicalProperty(propertyInfo.Name, value))
+            if (SetPhysicalProperty(propertyInfo.Name, value))
             {
-                SetProperty(propertyInfo.DeclaringType, propertyInfo, value);
+                return;
+            }
+
+            Types.Add(propertyInfo.DeclaringType);
+            var valueType = propertyInfo.PropertyType;
+            if (valueType.IsAnEnumerable())
+            {
+                SetEnumerableProperty(valueType, propertyInfo, value);
+                return;
+            }
+
+            if (!valueType.GetTypeInfo().IsValueType)
+            {
+                valueType = ReferenceType;
+            }
+
+            lock (Sync)
+            {
+                Dictionary<Type, Dictionary<PropertyInfo, object>> entityTypeProperties;
+                if (!Properties.TryGetValue(propertyInfo.DeclaringType, out entityTypeProperties))
+                {
+                    Properties[propertyInfo.DeclaringType] = entityTypeProperties = new Dictionary<Type, Dictionary<PropertyInfo, object>>();
+                }
+
+                Dictionary<PropertyInfo, object> typeProperties;
+                if (!entityTypeProperties.TryGetValue(valueType, out typeProperties))
+                {
+                    entityTypeProperties[valueType] = typeProperties = new Dictionary<PropertyInfo, object>();
+                }
+
+                if (value == null)
+                {
+                    typeProperties.Remove(propertyInfo);
+                }
+                else
+                {
+                    typeProperties[propertyInfo] = value;
+                }
             }
         }
 
@@ -173,7 +214,7 @@ namespace RollerCaster
             {
                 foreach (var propertyValue in PropertyValues)
                 {
-                    result.SetProperty(propertyValue.CastedType, propertyValue.Property.Name, propertyValue.Value);
+                    result.SetProperty(propertyValue.Property, propertyValue.Value);
                 }
 
                 return result;
@@ -195,6 +236,16 @@ namespace RollerCaster
         }
 #endif
 
+        internal object GetProperty(Type objectType, Type propertyType, string propertyName)
+        {
+            return GetProperty(objectType.FindProperty(propertyName, propertyType));
+        }
+
+        internal void SetProperty(Type objectType, Type propertyType, string propertyName, object value)
+        {
+            SetProperty(objectType.FindProperty(propertyName, propertyType), value);
+        }
+
         internal MulticastObject CreateChildMulticastObject()
         {
             return CreateChildInstance();
@@ -207,24 +258,6 @@ namespace RollerCaster
             return new MulticastObject();
         }
 
-        private static void ValidateArguments(Type objectType, string propertyName)
-        {
-            if (objectType == null)
-            {
-                throw new ArgumentNullException(nameof(objectType));
-            }
-
-            if (propertyName == null)
-            {
-                throw new ArgumentNullException(nameof(propertyName));
-            }
-
-            if (propertyName.Length == 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(propertyName));
-            }
-        }
-
         private object GetPhysicalProperty(string propertyName)
         {
             var existingProperty = GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
@@ -234,38 +267,6 @@ namespace RollerCaster
             }
 
             return null;
-        }
-
-        private object GetProperty(Type objectType, PropertyInfo propertyInfo)
-        {
-            var valueType = propertyInfo.PropertyType;
-            if (valueType.IsAnEnumerable())
-            {
-                return GetEnumerableProperty(objectType, valueType, propertyInfo);
-            }
-
-            if (!valueType.GetTypeInfo().IsValueType)
-            {
-                valueType = ReferenceType;
-            }
-
-            lock (Sync)
-            {
-                Dictionary<Type, Dictionary<PropertyInfo, object>> entityTypeProperties;
-                if (!Properties.TryGetValue(objectType, out entityTypeProperties))
-                {
-                    return propertyInfo.PropertyType.GetDefaultValue();
-                }
-
-                Dictionary<PropertyInfo, object> typeProperties;
-                if (!entityTypeProperties.TryGetValue(valueType, out typeProperties))
-                {
-                    return propertyInfo.PropertyType.GetDefaultValue();
-                }
-
-                object value;
-                return (!typeProperties.TryGetValue(propertyInfo, out value) ? propertyInfo.PropertyType.GetDefaultValue() : value);
-            }
         }
 
         private bool SetPhysicalProperty(string propertyName, object value)
@@ -280,53 +281,14 @@ namespace RollerCaster
             return true;
         }
 
-        private void SetProperty(Type objectType, PropertyInfo propertyInfo, object value)
-        {
-            var valueType = propertyInfo.PropertyType;
-            if (valueType.IsAnEnumerable())
-            {
-                SetEnumerableProperty(objectType, valueType, propertyInfo, value);
-                return;
-            }
-
-            if (!valueType.GetTypeInfo().IsValueType)
-            {
-                valueType = ReferenceType;
-            }
-
-            lock (Sync)
-            {
-                Dictionary<Type, Dictionary<PropertyInfo, object>> entityTypeProperties;
-                if (!Properties.TryGetValue(objectType, out entityTypeProperties))
-                {
-                    Properties[objectType] = entityTypeProperties = new Dictionary<Type, Dictionary<PropertyInfo, object>>();
-                }
-
-                Dictionary<PropertyInfo, object> typeProperties;
-                if (!entityTypeProperties.TryGetValue(valueType, out typeProperties))
-                {
-                    entityTypeProperties[valueType] = typeProperties = new Dictionary<PropertyInfo, object>();
-                }
-
-                if (value == null)
-                {
-                    typeProperties.Remove(propertyInfo);
-                }
-                else
-                {
-                    typeProperties[propertyInfo] = value;
-                }
-            }
-        }
-
-        private object GetEnumerableProperty(Type objectType, Type valueType, PropertyInfo propertyInfo)
+        private object GetEnumerableProperty(Type valueType, PropertyInfo propertyInfo)
         {
             lock (Sync)
             {
                 Dictionary<Type, Dictionary<PropertyInfo, object>> entityTypeProperties;
-                if (!Properties.TryGetValue(objectType, out entityTypeProperties))
+                if (!Properties.TryGetValue(propertyInfo.DeclaringType, out entityTypeProperties))
                 {
-                    Properties[objectType] = entityTypeProperties = new Dictionary<Type, Dictionary<PropertyInfo, object>>();
+                    Properties[propertyInfo.DeclaringType] = entityTypeProperties = new Dictionary<Type, Dictionary<PropertyInfo, object>>();
                 }
 
                 Dictionary<PropertyInfo, object> typeProperties;
@@ -345,14 +307,14 @@ namespace RollerCaster
             }
         }
 
-        private void SetEnumerableProperty(Type objectType, Type valueType, PropertyInfo propertyInfo, object value)
+        private void SetEnumerableProperty(Type valueType, PropertyInfo propertyInfo, object value)
         {
             lock (Sync)
             {
                 Dictionary<Type, Dictionary<PropertyInfo, object>> entityTypeProperties;
-                if (!Properties.TryGetValue(objectType, out entityTypeProperties))
+                if (!Properties.TryGetValue(propertyInfo.DeclaringType, out entityTypeProperties))
                 {
-                    Properties[objectType] = entityTypeProperties = new Dictionary<Type, Dictionary<PropertyInfo, object>>();
+                    Properties[propertyInfo.DeclaringType] = entityTypeProperties = new Dictionary<Type, Dictionary<PropertyInfo, object>>();
                 }
 
                 Dictionary<PropertyInfo, object> typeProperties;

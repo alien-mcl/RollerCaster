@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System.Reflection;
+using FluentAssertions;
 using NUnit.Framework;
 using RollerCaster.Data;
 
@@ -25,7 +26,7 @@ namespace Given_instance_of.MulticastObject_class
 
         protected override void ScenarioSetup()
         {
-            MulticastObject.SetProperty(typeof(IProduct), "Name", ExpectedName = "Product name");
+            MulticastObject.SetProperty(typeof(IProduct).GetTypeInfo().GetProperty("Name"), ExpectedName = "Product name");
             Dynamic = MulticastObject;
         }
     }
