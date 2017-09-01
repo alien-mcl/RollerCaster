@@ -12,7 +12,7 @@ namespace RollerCaster
         internal const string AssemblyNameString = "RollerCaster.Proxies";
         private static readonly object Sync = new Object();
         private static readonly AssemblyName AssemblyName = new AssemblyName(AssemblyNameString);
-#if NETSTANDARD1_4
+#if NETSTANDARD2_0
         private static readonly AssemblyBuilder AssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(AssemblyName, AssemblyBuilderAccess.Run);
 #else
         private static readonly AssemblyBuilder AssemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName, AssemblyBuilderAccess.Run);

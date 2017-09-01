@@ -174,12 +174,9 @@ namespace RollerCaster
                 CloneInternal(multicastObject, newMulticastObject, visitedObjects);
                 return instance;
             }
-#if NETSTANDARD1_4
-            instance = targetValue;
-#else
+
             var clonable = targetValue as ICloneable;
             visitedObjects.Add(targetValue, instance = clonable?.Clone() ?? targetValue);
-#endif
             return instance;
         }
     }

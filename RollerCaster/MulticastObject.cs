@@ -10,12 +10,7 @@ using RollerCaster.Reflection;
 namespace RollerCaster
 {
     /// <summary>Representation of a multi-cast object.</summary>
-    public class MulticastObject : DynamicObject
-#if !NETSTANDARD1_4
-#pragma warning disable SA1001 // Commas must be spaced correctly
-        ,ICloneable
-#pragma warning restore SA1001 // Commas must be spaced correctly
-#endif
+    public class MulticastObject : DynamicObject, ICloneable
     {
         private static readonly Type ReferenceType = typeof(void);
 
@@ -226,7 +221,6 @@ namespace RollerCaster
             return result;
         }
 
-#if !NETSTANDARD1_4
         /// <inheritdoc />
         [ExcludeFromCodeCoverage]
         [SuppressMessage("UnitTests", "TS000:NoUnitTests", Justification = "Method is a standard implemented wrapper around a tested method that has the logic.")]
@@ -234,7 +228,6 @@ namespace RollerCaster
         {
             return Clone(true);
         }
-#endif
 
         internal object GetProperty(Type objectType, Type propertyType, string propertyName)
         {

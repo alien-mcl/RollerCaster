@@ -11,5 +11,19 @@
         <description>Simple yet effective strongly typed interface based state bag. With this library, you can dynamically cast an object to any property-only interface to gain a strongly typed, dynamic-like state bag.</description>
         <copyright>Copyright ©2017 Karol Szczepanski</copyright>
         <tags>dynamic cast</tags>
+        <frameworkAssemblies>
+            <frameworkAssembly assemblyName="System" targetFramework="net461" />
+            <frameworkAssembly assemblyName="System.Core" targetFramework="net461" />
+            <frameworkAssembly assemblyName="NETStandard.Library" targetFramework="netstandard2.0" />
+        </frameworkAssemblies>
+        <dependencies>
+            <group targetFramework="netstandard2.0">
+                <dependency id="System.Collections.NonGeneric" version="4.3.0" />
+                <dependency id="System.Diagnostics.Tools" version="4.3.0" />
+                <dependency id="System.Dynamic.Runtime" version="4.3.0" />
+                <dependency id="System.Reflection.Emit" version="4.3.0" />
+                <dependency id="System.Reflection.TypeExtensions" version="4.4.0" />
+            </group>
+        </dependencies>
     </metadata>
 </package>
