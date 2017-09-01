@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System.Reflection;
+using FluentAssertions;
 using NUnit.Framework;
 using RollerCaster;
 using RollerCaster.Data;
@@ -33,7 +34,7 @@ namespace Given_instance_of.DynamicObject_class
         public void Setup()
         {
             Proxy = new MulticastObject();
-            Proxy.SetProperty(typeof(ITestResource).GetProperty("Test"), "Test");
+            Proxy.SetProperty(typeof(ITestResource).GetTypeInfo().GetProperty("Test"), "Test");
             Dynamic = Proxy.ActLike<IProduct>();
         }
     }
