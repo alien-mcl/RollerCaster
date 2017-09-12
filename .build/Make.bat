@@ -12,7 +12,7 @@ ECHO Building .net Framework v4.6.1
 @ECHO OFF
 msbuild RollerCaster.sln /t:Restore
 msbuild RollerCaster.sln /p:Configuration=Release
-ECHO Building NETSTANDARD1.4
+ECHO Building NETSTANDARD2.0
 @ECHO OFF
 msbuild RollerCaster.Core.sln /t:Restore
 msbuild RollerCaster.Core.sln /p:Configuration=Release
@@ -23,6 +23,6 @@ MD NugetBuild\lib\net461
 MD NugetBuild\lib\netstandard14
 COPY RollerCaster\bin\Release\RollerCaster.dll NugetBuild\lib\net461
 COPY RollerCaster\bin\Release\RollerCaster.xml NugetBuild\lib\net461
-COPY RollerCaster\bin\Release\netstandard1.4\RollerCaster.dll NugetBuild\lib\netstandard14
+COPY RollerCaster\bin\Release\netstandard2.0\RollerCaster.dll NugetBuild\lib\netstandard14
 COPY ".nuget\RollerCaster.nuspec" NugetBuild
 ".build\nuget" pack NugetBuild\RollerCaster.nuspec -version %tag:~1%.%version%.%release% -outputdirectory NugetBuild
