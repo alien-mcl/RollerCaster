@@ -54,6 +54,8 @@
     <Compile Include="AssertionsExtensions.cs" />
     <Compile Include="Collections\DictionaryExtensions.cs" />
     <Compile Include="Collections\CollectionExtensions.cs" />
+    <Compile Include="Data\SpecializedProduct.cs" />
+    <Compile Include="Data\Product.cs" />
     <Compile Include="Data\ISpecializedProduct.cs" />
     <Compile Include="Data\IThing.cs" />
     <Compile Include="Data\IProduct.cs" />
@@ -61,6 +63,7 @@
     <Compile Include="Given_instance_of\DynamicObject_class\when_getting_property.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\MulticastObjectTest.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_adding_an_item_to_collection.cs" />
+    <Compile Include="Given_instance_of\MulticastObject_class\when_casted_to_another_class.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_cloning.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_deep_cloning.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_getting_a_property\which_is_a_reference_type\by_name.cs" />
@@ -84,6 +87,7 @@
     <Compile Include="Given_instance_of\MulticastPropertyValue_class\when_comparing.cs" />
     <Compile Include="Given_instance_of\ProxyBase_class\when_getting_property.cs" />
     <Compile Include="Given_instance_of\SpecializedMulticastObject_class\SpecializedMulticastObjectTest.cs" />
+    <Compile Include="Given_instance_of\SpecializedMulticastObject_class\when_calling_object_methods.cs" />
     <Compile Include="Given_instance_of\SpecializedMulticastObject_class\when_getting_an_owned_property.cs" />
     <Compile Include="Given_instance_of\SpecializedMulticastObject_class\when_setting_an_owned_property.cs" />
     <Compile Include="Given_instance_of\TypeExtensions_class\when_creating_a_default_value.cs" />

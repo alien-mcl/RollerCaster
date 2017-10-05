@@ -24,6 +24,7 @@
     <CodeAnalysisRuleSet>..\RollerCaster.ruleset</CodeAnalysisRuleSet>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <DocumentationFile>bin\Debug\RollerCaster.xml</DocumentationFile>
+    <LangVersion>6</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -51,7 +52,7 @@
     <Compile Include="MulticastPropertyValue.cs" />
     <Compile Include="MulticastPropertyValueCollection.cs" />
     <Compile Include="MulticastPropertyValueEnumerator.cs" />
-    <Compile Include="ProxyBase.cs" />
+    <Compile Include="MulticastObjectHelper.cs" />
     <Compile Include="Reflection\TypeExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
