@@ -13,6 +13,12 @@ namespace Given_instance_of.DynamicExtensions_class
         private MulticastObject MulticastObject { get; set; }
 
         [Test]
+        public void Should_throw_class_has_abstract_methods()
+        {
+            new MulticastObject().Invoking(instance => instance.ActLike<TestAbstractClass>()).ShouldThrow<ArgumentOutOfRangeException>();
+        }
+
+        [Test]
         public void Should_throw_when_that_object_is_neither_a_MulticastObject_nor_IProxy()
         {
             new Object().Invoking(instance => instance.Unwrap()).ShouldThrow<InvalidOperationException>();
@@ -60,6 +66,11 @@ namespace Given_instance_of.DynamicExtensions_class
         public void Should_throw_when_the_casted_type_is_not_an_interface()
         {
             new MulticastObject().Invoking(instance => instance.ActLike(typeof(string))).ShouldThrow<ArgumentOutOfRangeException>();
+        }
+
+        public abstract class TestAbstractClass
+        {
+            public abstract void AbstractMethod();
         }
     }
 }

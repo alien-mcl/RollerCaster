@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Dynamic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -178,11 +180,31 @@ namespace RollerCaster
                 return instance;
             }
 
+            if (type.IsClass && type.IsAbstract)
+            {
+                var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                var methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                    .Except(properties.Select(property => property.GetGetMethod()))
+                    .Except(properties.Select(property => property.GetSetMethod()));
+                if (methods.Any(method => method.IsAbstract))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(type), $"Abstract type {type} must implement all abstract methods.");
+                }
+            }
+
             string name = $"ProxyOf_{type.GetName()}";
+            var types = new[] { type }.Union(type.GetInterfaces()).ToList();
+            var currentBaseType = type.BaseType;
+            while (currentBaseType != null)
+            {
+                types.Add(currentBaseType);
+                currentBaseType = currentBaseType.BaseType;
+            }
+
             Type generatedType;
             lock (Sync)
             {
-                generatedType = AssemblyBuilder.GetType(name) ?? CompileResultType(name, new[] { type }.Union(type.GetInterfaces()).ToArray());
+                generatedType = AssemblyBuilder.GetType(name) ?? CompileResultType(name, types);
             }
 
             mutlicastObject.Types.Add(type);
@@ -190,15 +212,29 @@ namespace RollerCaster
             return result;
         }
 
-        private static Type CompileResultType(string name, Type[] types)
+        private static Type CompileResultType(string name, IList<Type> types)
         {
-            TypeBuilder typeBuilder = GetTypeBuilder(name, types);
+            var baseType = (types[0].IsInterface ? typeof(DynamicObject) : types[0]);
+            TypeBuilder typeBuilder = GetTypeBuilder(name, types, baseType);
             FieldBuilder wrappedObjectFieldBuilder = typeBuilder.DefineField("_wrappedObject", typeof(MulticastObject), FieldAttributes.Private);
             FieldBuilder currentCastedTypeFieldBuilder = typeBuilder.DefineField("_currentCastedType", typeof(MulticastObject), FieldAttributes.Private);
-            typeBuilder.CreateConstructor(wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder);
+            typeBuilder.CreateConstructor(wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, baseType);
+            typeBuilder.CreateMethodOverrideImplementation(typeof(object).GetMethod("Equals", BindingFlags.Instance | BindingFlags.Public));
+            typeBuilder.CreateMethodOverrideImplementation(typeof(object).GetMethod("GetHashCode", BindingFlags.Instance | BindingFlags.Public));
+            if (types[0].IsInterface)
+            {
+                typeBuilder.CreateMethodOverrideImplementation(typeof(DynamicObject).GetMethod("TryGetMember", BindingFlags.Instance | BindingFlags.Public));
+                typeBuilder.CreateMethodOverrideImplementation(typeof(DynamicObject).GetMethod("TrySetMember", BindingFlags.Instance | BindingFlags.Public));
+            }
+
             typeBuilder.CreateProperty(types[0], typeof(IProxy).GetProperty("WrappedObject"), wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, wrappedObjectFieldBuilder);
             typeBuilder.CreateProperty(types[0], typeof(IProxy).GetProperty("CurrentCastedType"), wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, currentCastedTypeFieldBuilder);
-            foreach (var property in from type in types from property in type.GetProperties() where property.CanRead select property)
+            var properties = from type in types
+                             where type == types[0] || type.IsInterface
+                             from property in type.GetProperties()
+                             where property.CanRead && (property.GetGetMethod().IsAbstract || property.GetGetMethod().IsVirtual)
+                             select property;
+            foreach (var property in properties)
             {
                 typeBuilder.CreateProperty(types[0], property, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, null);
             }
@@ -207,7 +243,7 @@ namespace RollerCaster
             return objectType;
         }
 
-        private static void CreateConstructor(this TypeBuilder typeBuilder, FieldBuilder wrappedObjectFieldBuilder, FieldBuilder currentCastedTypeFieldBuilder)
+        private static void CreateConstructor(this TypeBuilder typeBuilder, FieldBuilder wrappedObjectFieldBuilder, FieldBuilder currentCastedTypeFieldBuilder, Type baseType)
         {
             var constructorBuilder = typeBuilder.DefineConstructor(
                 MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
@@ -215,7 +251,7 @@ namespace RollerCaster
                 new[] { typeof(object), typeof(Type) });
             var constructorIl = constructorBuilder.GetILGenerator();
             constructorIl.Emit(OpCodes.Ldarg_0);
-            constructorIl.Emit(OpCodes.Call, typeof(ProxyBase).GetConstructor(Type.EmptyTypes));
+            constructorIl.Emit(OpCodes.Call, baseType.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null));
             constructorIl.Emit(OpCodes.Nop);
             constructorIl.Emit(OpCodes.Nop);
             constructorIl.Emit(OpCodes.Ldarg_0);
@@ -225,6 +261,32 @@ namespace RollerCaster
             constructorIl.Emit(OpCodes.Ldarg_2);
             constructorIl.Emit(OpCodes.Stfld, currentCastedTypeFieldBuilder);
             constructorIl.Emit(OpCodes.Ret);
+        }
+
+        private static void CreateMethodOverrideImplementation(this TypeBuilder typeBuilder, MethodInfo methodToOverride)
+        {
+            var parameters = methodToOverride.GetParameters();
+            var methodBuilder = typeBuilder.DefineMethod(
+                methodToOverride.Name,
+                (methodToOverride.Attributes & (~MethodAttributes.VtableLayoutMask)) | MethodAttributes.ReuseSlot,
+                methodToOverride.CallingConvention,
+                methodToOverride.ReturnType,
+                methodToOverride.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
+            var methodIl = methodBuilder.GetILGenerator();
+            methodIl.Emit(OpCodes.Nop);
+            methodIl.Emit(OpCodes.Ldarg_0);
+            for (int index = 0; index < parameters.Length; index++)
+            {
+                methodIl.Emit((OpCode)typeof(OpCodes).GetField("Ldarg_" + (index + 1), BindingFlags.Static | BindingFlags.Public).GetValue(null));
+            }
+
+            methodIl.Emit(OpCodes.Call, typeof(MulticastObjectHelper).GetMethod(methodToOverride.Name, BindingFlags.Static | BindingFlags.NonPublic));
+            if (methodToOverride.ReturnParameter != null)
+            {
+                methodIl.Emit(OpCodes.Ret);
+            }
+
+            typeBuilder.DefineMethodOverride(methodBuilder, methodToOverride);
         }
 
         private static void CreateProperty(
@@ -237,7 +299,7 @@ namespace RollerCaster
         {
             PropertyBuilder propertyBuilder = typeBuilder.DefineProperty(property.Name, PropertyAttributes.HasDefault, property.PropertyType, null);
             typeBuilder.CreatePropertyGetter(castedType, property, propertyBuilder, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, specialFieldBuilder);
-            if (property.CanWrite)
+            if (property.CanWrite && (property.GetSetMethod().IsAbstract || property.GetSetMethod().IsVirtual))
             {
                 typeBuilder.CreatePropertySetter(castedType, property, propertyBuilder, wrappedObjectFieldBuilder);
             }
@@ -328,13 +390,13 @@ namespace RollerCaster
             typeBuilder.DefineMethodOverride(setterBuilder, property.SetMethod);
         }
 
-        private static TypeBuilder GetTypeBuilder(string name, Type[] types)
+        private static TypeBuilder GetTypeBuilder(string name, IList<Type> types, Type baseType = null)
         {
             TypeBuilder typeBuilder = ModuleBuilder.DefineType(
                 name,
                 TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.AutoClass | TypeAttributes.AnsiClass | TypeAttributes.BeforeFieldInit | TypeAttributes.AutoLayout,
-                typeof(ProxyBase),
-                new[] { typeof(IProxy) }.Union(types).ToArray());
+                baseType == typeof(object) ? null : baseType,
+                new[] { typeof(IProxy) }.Union(types.Where(type => type.IsInterface)).ToArray());
             return typeBuilder;
         }
     }

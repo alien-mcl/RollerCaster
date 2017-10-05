@@ -1,3 +1,3 @@
-[assembly: System.Reflection.AssemblyVersion("1.0.0.0")] 
-[assembly: System.Reflection.AssemblyFileVersion("1.0.0.0")] 
-[assembly: System.Reflection.AssemblyInformationalVersion("1.0.0.0-b1707f5f9e26bfb8cb2bffd485fe4bb57a50ff66")] 
+[assembly: System.Reflection.AssemblyVersion("1.1.1.0")] 
+[assembly: System.Reflection.AssemblyFileVersion("1.1.1.0")] 
+[assembly: System.Reflection.AssemblyInformationalVersion("1.1.1.0-af30d4c5a2b49449facbcc42b7dc6af6c6048b2e")] 
