@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
 
 namespace RollerCaster
@@ -9,12 +10,18 @@ namespace RollerCaster
     /// <summary>Iterates through a collections of properties set.</summary>
     internal sealed class MulticastPropertyValueEnumerator : IEnumerator<MulticastPropertyValue>
     {
+        private const int PropertyLevel = 0;
+        private const int EntityTypeLevel = 2;
+
         private readonly MulticastObject _multicastObject;
-        private Stack<Tuple<IDictionary, IEnumerator>> _stack;
+        private readonly Stack<Tuple<IDictionary, IEnumerator>> _stack;
+        private readonly Dictionary<Type, ICollection<PropertyInfo>> _visitedEntityProperties;
 
         internal MulticastPropertyValueEnumerator(MulticastObject multicastObject)
         {
             _multicastObject = multicastObject;
+            _stack = new Stack<Tuple<IDictionary, IEnumerator>>(3);
+            _visitedEntityProperties = new Dictionary<Type, ICollection<PropertyInfo>>();
             Reset();
         }
 
@@ -36,7 +43,7 @@ namespace RollerCaster
                 {
                     switch (index)
                     {
-                        case 0:
+                        case PropertyLevel:
                         {
                             var pair = (DictionaryEntry)item.Item2.Current;
                             property = (PropertyInfo)pair.Key;
@@ -44,7 +51,7 @@ namespace RollerCaster
                             break;
                         }
 
-                        case 2:
+                        case EntityTypeLevel:
                         {
                             var pair = (DictionaryEntry)item.Item2.Current;
                             type = (Type)pair.Key;
@@ -55,6 +62,7 @@ namespace RollerCaster
                     index++;
                 }
 
+                MarkAsVisited(type, property);
                 return new MulticastPropertyValue(type, property, value);
             }
         }
@@ -78,10 +86,11 @@ namespace RollerCaster
         /// <inheritdoc />
         public void Reset()
         {
-            _stack = new Stack<Tuple<IDictionary, IEnumerator>>(3);
+            _stack.Clear();
+            _visitedEntityProperties.Clear();
             for (int index = 0; index < 3; index++)
             {
-                var current = (index == 0
+                var current = (index == PropertyLevel
                     ? _multicastObject.Properties
                     : (IDictionary)_stack.Peek().Item2.Current.GetType().GetTypeInfo().GetDeclaredProperty("Value").GetValue(_stack.Peek().Item2.Current));
                 if (!ResetInternal(current))
@@ -89,7 +98,7 @@ namespace RollerCaster
                     return;
                 }
 
-                if (index >= 2)
+                if (index >= EntityTypeLevel)
                 {
                     continue;
                 }
@@ -103,9 +112,24 @@ namespace RollerCaster
 
         private bool MoveNextInternal()
         {
+            IEnumerator currentEnumerator;
             if (_stack.Peek().Item2.MoveNext())
             {
                 return true;
+            }
+            else if (_stack.Count == 2)
+            {
+                var currentType = (Type)((DictionaryEntry)_stack.Last().Item2.Current).Key;
+                var unvisitedProperties = _multicastObject.TypeProperties[currentType].Except(_visitedEntityProperties[currentType]);
+                if (unvisitedProperties.Any())
+                {
+                    var unvisitedPropertiesMap = (IDictionary)unvisitedProperties.ToDictionary(
+                        _ => _,
+                        _ => _multicastObject.GetProperty(_));
+                    currentEnumerator = unvisitedPropertiesMap.GetEnumerator();
+                    _stack.Push(new Tuple<IDictionary, IEnumerator>(unvisitedPropertiesMap, currentEnumerator));
+                    return currentEnumerator.MoveNext();
+                }
             }
 
             _stack.Pop();
@@ -119,10 +143,16 @@ namespace RollerCaster
                 return false;
             }
 
-            var current = (IDictionary)((DictionaryEntry)_stack.Peek().Item2.Current).Value;
-            IEnumerator currentEnumerator;
-            _stack.Push(new Tuple<IDictionary, IEnumerator>(current, currentEnumerator = current.GetEnumerator()));
-            return currentEnumerator.MoveNext();
+            if (_stack.Count <= 2)
+            {
+                var current = (IDictionary)((DictionaryEntry)_stack.Peek().Item2.Current).Value;
+                _stack.Push(new Tuple<IDictionary, IEnumerator>(current, currentEnumerator = current.GetEnumerator()));
+                return currentEnumerator.MoveNext();
+            }
+            else
+            {
+                return true;
+            }
         }
 
         private bool ResetInternal(IDictionary dictionary)
@@ -134,6 +164,17 @@ namespace RollerCaster
 
             _stack.Push(new Tuple<IDictionary, IEnumerator>(dictionary, dictionary.GetEnumerator()));
             return true;
+        }
+
+        private void MarkAsVisited(Type type, PropertyInfo propertyInfo)
+        {
+            ICollection<PropertyInfo> entityTypeProperties;
+            if (!_visitedEntityProperties.TryGetValue(type, out entityTypeProperties))
+            {
+                _visitedEntityProperties[type] = entityTypeProperties = new HashSet<PropertyInfo>();
+            }
+
+            entityTypeProperties.Add(propertyInfo);
         }
     }
 }

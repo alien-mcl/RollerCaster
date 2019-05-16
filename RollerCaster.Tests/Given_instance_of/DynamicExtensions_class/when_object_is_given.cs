@@ -63,9 +63,10 @@ namespace Given_instance_of.DynamicExtensions_class
         }
 
         [Test]
-        public void Should_throw_when_the_casted_type_is_not_an_interface()
+        public void Should_throw_when_casting_to_multiple_classes()
         {
-            new MulticastObject().Invoking(instance => instance.ActLike(typeof(string))).ShouldThrow<ArgumentOutOfRangeException>();
+            new MulticastObject().ActLike<SpecializedProduct>().Invoking(instance => instance.ActLike(typeof(string)))
+                .ShouldThrow<InvalidOperationException>();
         }
 
         public abstract class TestAbstractClass

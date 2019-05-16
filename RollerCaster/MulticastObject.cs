@@ -20,6 +20,7 @@ namespace RollerCaster
             Sync = new Object();
             Properties = new Dictionary<Type, Dictionary<Type, Dictionary<PropertyInfo, object>>>();
             Types = new HashSet<Type>();
+            TypeProperties = new Dictionary<Type, IEnumerable<PropertyInfo>>();
         }
 
         /// <summary>Gets casted types.</summary>
@@ -31,6 +32,8 @@ namespace RollerCaster
         internal Dictionary<Type, Dictionary<Type, Dictionary<PropertyInfo, object>>> Properties { get; }
 
         internal HashSet<Type> Types { get; }
+
+        internal Dictionary<Type, IEnumerable<PropertyInfo>> TypeProperties { get; }
 
         /// <summary>Gets the multi-threading synchronization context used by this instance.</summary>
         protected object Sync { get; }

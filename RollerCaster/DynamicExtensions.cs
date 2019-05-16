@@ -62,6 +62,7 @@ namespace RollerCaster
         {
             var multicastObject = instance.Unwrap();
             multicastObject.Types.Remove(typeof(T));
+            multicastObject.TypeProperties.Remove(typeof(T));
         }
 
         /// <summary>Checkes whether a given <paramref name="instance" /> was already casted to an interface of type <typeparamref name="T" />.</summary>
@@ -137,11 +138,6 @@ namespace RollerCaster
                 throw new ArgumentNullException(nameof(type));
             }
 
-            if (!type.GetTypeInfo().IsInterface)
-            {
-                throw new ArgumentOutOfRangeException(nameof(type));
-            }
-
             return instance.ActLikeInternal(type);
         }
 
@@ -174,13 +170,62 @@ namespace RollerCaster
 
         private static object ActLikeInternal(this object instance, Type type)
         {
-            var mutlicastObject = instance.Unwrap();
             if (type.IsInstanceOfType(instance))
             {
                 return instance;
             }
 
-            if (type.IsClass && type.IsAbstract)
+            var multicastObject = instance.Unwrap();
+            if (type.IsClass)
+            {
+                ValidateClassCast(multicastObject, type);
+            }
+
+            string name = $"ProxyOf_{type.GetName()}";
+            Type generatedType;
+            if (!multicastObject.Types.Contains(type))
+            {
+                multicastObject.Types.Add(type);
+                var types = new List<Type>();
+                types.Add(type);
+                multicastObject.TypeProperties[type] = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                foreach (var implementedInterface in type.GetInterfaces())
+                {
+                    types.Add(implementedInterface);
+                    multicastObject.TypeProperties[implementedInterface] = implementedInterface.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                }
+
+                var currentBaseType = type.BaseType;
+                while (currentBaseType != null)
+                {
+                    types.Add(currentBaseType);
+                    multicastObject.TypeProperties[currentBaseType] = currentBaseType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                    currentBaseType = currentBaseType.BaseType;
+                }
+
+                lock (Sync)
+                {
+                    generatedType = AssemblyBuilder.GetType(name) ?? CompileResultType(name, types);
+                }
+            }
+            else
+            {
+                generatedType = AssemblyBuilder.GetType(name);
+            }
+
+            var result = generatedType.GetConstructors().First().Invoke(new object[] { multicastObject, type });
+            return result;
+        }
+
+        private static void ValidateClassCast(MulticastObject multicastObject, Type type)
+        {
+            var currentClass = multicastObject.Types.FirstOrDefault(_ => _.IsClass && _ != type);
+            if (currentClass != null)
+            {
+                throw new InvalidOperationException($"Instance is already of type {currentClass} and cannot be casted to another class of type {type}.");
+            }
+
+            if (type.IsAbstract)
             {
                 var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                 var methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
@@ -191,25 +236,6 @@ namespace RollerCaster
                     throw new ArgumentOutOfRangeException(nameof(type), $"Abstract type {type} must implement all abstract methods.");
                 }
             }
-
-            string name = $"ProxyOf_{type.GetName()}";
-            var types = new[] { type }.Union(type.GetInterfaces()).ToList();
-            var currentBaseType = type.BaseType;
-            while (currentBaseType != null)
-            {
-                types.Add(currentBaseType);
-                currentBaseType = currentBaseType.BaseType;
-            }
-
-            Type generatedType;
-            lock (Sync)
-            {
-                generatedType = AssemblyBuilder.GetType(name) ?? CompileResultType(name, types);
-            }
-
-            mutlicastObject.Types.Add(type);
-            var result = generatedType.GetConstructors().First().Invoke(new object[] { mutlicastObject, type });
-            return result;
         }
 
         private static Type CompileResultType(string name, IList<Type> types)

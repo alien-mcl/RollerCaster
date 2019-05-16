@@ -1,9 +1,12 @@
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using FluentAssertions;
 using NUnit.Framework;
 using RollerCaster;
+using RollerCaster.Collections;
 using RollerCaster.Data;
 
 namespace Given_instance_of.MulticastObject_class
@@ -16,6 +19,9 @@ namespace Given_instance_of.MulticastObject_class
             new MulticastPropertyValue(typeof(IProduct), typeof(IProduct).GetTypeInfo().GetProperty("Name"), "Name"),
             new MulticastPropertyValue(typeof(IProduct), typeof(IProduct).GetTypeInfo().GetProperty("Ordinal"), 1),
             new MulticastPropertyValue(typeof(IProduct), typeof(IProduct).GetTypeInfo().GetProperty("Price"), 3.14159d),
+            new MulticastPropertyValue(typeof(IProduct), typeof(IProduct).GetTypeInfo().GetProperty("CreatedOn"), default(DateTime)),
+            new MulticastPropertyValue(typeof(IProduct), typeof(IProduct).GetTypeInfo().GetProperty("Categories"), new ObservableList<string>()),
+            new MulticastPropertyValue(typeof(IProduct), typeof(IProduct).GetTypeInfo().GetProperty("Properties"), new ConcurrentDictionary<string, string>()),
             new MulticastPropertyValue(typeof(IThing), typeof(IThing).GetTypeInfo().GetProperty("Description"), "Description")
         };
 
@@ -29,7 +35,8 @@ namespace Given_instance_of.MulticastObject_class
         [Test]
         public void Should_enumerate_through_all_properties_set_correctly()
         {
-            Result.Should().BeEquivalentTo(ExpectedProperties);
+            Result.Select(_ => $"{_.CastedType.FullName}.{_.Property.Name}")
+                .Should().BeEquivalentTo(ExpectedProperties.Select(_ => $"{_.CastedType.FullName}.{_.Property.Name}"));
         }
 
         [Test]
@@ -52,10 +59,12 @@ namespace Given_instance_of.MulticastObject_class
 
         protected override void ScenarioSetup()
         {
-            foreach (var propertyValue in ExpectedProperties)
-            {
-                MulticastObject.SetProperty(propertyValue.Property, propertyValue.Value);
-            }
+            var product = MulticastObject.ActLike<IProduct>();
+            product.Name = "Name";
+            product.Ordinal = 1;
+            product.Price = 3.14159;
+            var thing = MulticastObject.ActLike<IThing>();
+            thing.Description = "Description";
         }
     }
 }

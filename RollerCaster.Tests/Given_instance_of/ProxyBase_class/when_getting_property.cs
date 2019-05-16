@@ -34,6 +34,12 @@ namespace Given_instance_of.ProxyBase_class
             Proxy.Properties.Should().ContainKey("key").WhichValue.Should().Be("value");
         }
 
+        [Test]
+        public void Should_get_default_value()
+        {
+            Proxy.Ordinal.Should().Be(default(int));
+        }
+
         [SetUp]
         public void Setup()
         {

@@ -9,7 +9,7 @@
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <releaseNotes>Initial version with all predicted features available.</releaseNotes>
         <description>Simple yet effective strongly typed interface based state bag. With this library, you can dynamically cast an object to any property-only interface to gain a strongly typed, dynamic-like state bag.</description>
-        <copyright>Copyright ©2017 Karol Szczepanski</copyright>
+        <copyright>Copyright ©2019 Karol Szczepanski</copyright>
         <tags>dynamic cast</tags>
         <frameworkAssemblies>
             <frameworkAssembly assemblyName="System" targetFramework="net461" />
