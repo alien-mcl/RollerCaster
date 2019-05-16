@@ -5,7 +5,7 @@
         <version>$version$</version>
         <authors>alien-mcl</authors>
         <owners>alien-mcl</owners>
-        <licenseUrl>https://opensource.org/licenses/BSD-3-Clause</licenseUrl>
+        <license type="file">LICENCE.md</license>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <releaseNotes>Initial version with all predicted features available.</releaseNotes>
         <description>Simple yet effective strongly typed interface based state bag. With this library, you can dynamically cast an object to any property-only interface to gain a strongly typed, dynamic-like state bag.</description>
@@ -26,4 +26,7 @@
             </group>
         </dependencies>
     </metadata>
+    <files>
+        <file src="LICENCE.md" target="" />
+    </files>
 </package>

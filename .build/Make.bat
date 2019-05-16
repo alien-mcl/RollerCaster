@@ -25,4 +25,5 @@ COPY RollerCaster\bin\Release\RollerCaster.dll NugetBuild\lib\net461
 COPY RollerCaster\bin\Release\RollerCaster.xml NugetBuild\lib\net461
 COPY RollerCaster\bin\Release\netstandard2.0\RollerCaster.dll NugetBuild\lib\netstandard14
 COPY ".nuget\RollerCaster.nuspec" NugetBuild
+COPY "LICENCE.md" NugetBuild
 ".build\nuget" pack NugetBuild\RollerCaster.nuspec -version %tag:~1%.%version%.%release% -outputdirectory NugetBuild
