@@ -54,6 +54,8 @@
     <Compile Include="AssertionsExtensions.cs" />
     <Compile Include="Collections\DictionaryExtensions.cs" />
     <Compile Include="Collections\CollectionExtensions.cs" />
+    <Compile Include="Data\SpecializedService.cs" />
+    <Compile Include="Data\Service.cs" />
     <Compile Include="Data\SpecializedProduct.cs" />
     <Compile Include="Data\Product.cs" />
     <Compile Include="Data\ISpecializedProduct.cs" />
@@ -86,6 +88,8 @@
     <Compile Include="Given_instance_of\MulticastObject_class\when_working_as_dynamic.cs" />
     <Compile Include="Given_instance_of\MulticastPropertyValue_class\when_comparing.cs" />
     <Compile Include="Given_instance_of\ProxyBase_class\when_getting_property.cs" />
+    <Compile Include="Given_instance_of\ProxyBase_class\which_inherits_from_another_class\and_inherits_event_more\when_getting_property.cs" />
+    <Compile Include="Given_instance_of\ProxyBase_class\which_inherits_from_another_class\when_getting_property.cs" />
     <Compile Include="Given_instance_of\SpecializedMulticastObject_class\SpecializedMulticastObjectTest.cs" />
     <Compile Include="Given_instance_of\SpecializedMulticastObject_class\when_calling_object_methods.cs" />
     <Compile Include="Given_instance_of\SpecializedMulticastObject_class\when_getting_an_owned_property.cs" />

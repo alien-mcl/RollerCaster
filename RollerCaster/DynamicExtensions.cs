@@ -5,6 +5,7 @@ using System.Dynamic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using RollerCaster.Reflection;
 
 namespace RollerCaster
 {
@@ -258,7 +259,9 @@ namespace RollerCaster
             var properties = from type in types
                              where type == types[0] || type.IsInterface
                              from property in type.GetProperties()
-                             where property.CanRead && (property.GetGetMethod().IsAbstract || property.GetGetMethod().IsVirtual)
+                             where property.CanRead
+                                   && (property.GetGetMethod().IsAbstract || property.GetGetMethod().IsVirtual)
+                                   && (type.IsInterface || (type.IsClass && !property.OverridesBase()))
                              select property;
             foreach (var property in properties)
             {
