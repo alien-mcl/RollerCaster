@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using RollerCaster.Reflection;
 
 namespace RollerCaster
 {
@@ -15,13 +16,13 @@ namespace RollerCaster
 
         private readonly MulticastObject _multicastObject;
         private readonly Stack<Tuple<IDictionary, IEnumerator>> _stack;
-        private readonly Dictionary<Type, ICollection<PropertyInfo>> _visitedEntityProperties;
+        private readonly HashSet<PropertyInfo> _visitedEntityProperties;
 
         internal MulticastPropertyValueEnumerator(MulticastObject multicastObject)
         {
             _multicastObject = multicastObject;
             _stack = new Stack<Tuple<IDictionary, IEnumerator>>(3);
-            _visitedEntityProperties = new Dictionary<Type, ICollection<PropertyInfo>>();
+            _visitedEntityProperties = new HashSet<PropertyInfo>(PropertyInfoEqualityComparer.Default);
             Reset();
         }
 
@@ -62,7 +63,7 @@ namespace RollerCaster
                     index++;
                 }
 
-                MarkAsVisited(type, property);
+                MarkAsVisited(property);
                 return new MulticastPropertyValue(type, property, value);
             }
         }
@@ -120,7 +121,8 @@ namespace RollerCaster
             else if (_stack.Count == 2)
             {
                 var currentType = (Type)((DictionaryEntry)_stack.Last().Item2.Current).Key;
-                var unvisitedProperties = _multicastObject.TypeProperties[currentType].Except(_visitedEntityProperties[currentType]);
+                var unvisitedProperties = _multicastObject.TypeProperties[currentType]
+                    .Except(_visitedEntityProperties, PropertyInfoEqualityComparer.Default);
                 if (unvisitedProperties.Any())
                 {
                     var unvisitedPropertiesMap = (IDictionary)unvisitedProperties.ToDictionary(
@@ -166,15 +168,9 @@ namespace RollerCaster
             return true;
         }
 
-        private void MarkAsVisited(Type type, PropertyInfo propertyInfo)
+        private void MarkAsVisited(PropertyInfo propertyInfo)
         {
-            ICollection<PropertyInfo> entityTypeProperties;
-            if (!_visitedEntityProperties.TryGetValue(type, out entityTypeProperties))
-            {
-                _visitedEntityProperties[type] = entityTypeProperties = new HashSet<PropertyInfo>();
-            }
-
-            entityTypeProperties.Add(propertyInfo);
+            _visitedEntityProperties.Add(propertyInfo);
         }
     }
 }

@@ -54,6 +54,7 @@
     <Compile Include="MulticastPropertyValueEnumerator.cs" />
     <Compile Include="MulticastObjectHelper.cs" />
     <Compile Include="Reflection\PropertyExtensions.cs" />
+    <Compile Include="Reflection\PropertyInfoEqualityComparer.cs" />
     <Compile Include="Reflection\TypeExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
