@@ -5,6 +5,7 @@ using System.Dynamic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using RollerCaster.Reflection;
 
 namespace RollerCaster
@@ -396,9 +397,20 @@ namespace RollerCaster
                 null,
                 new[] { property.PropertyType });
             setterBuilder.DefineParameter(1, ParameterAttributes.In, property.Name.Substring(0, 1).ToLower() + (property.Name.Length > 1 ? property.Name.Substring(1) : String.Empty));
+            var useBaseImplementation = property.DeclaringType.IsClass
+                                        && !property.GetSetMethod().IsAbstract
+                                        && property.GetSetMethod().GetCustomAttribute<CompilerGeneratedAttribute>() == null;
             ILGenerator setIl = setterBuilder.GetILGenerator();
 
             setIl.Emit(OpCodes.Nop);
+            if (useBaseImplementation)
+            {
+                setIl.Emit(OpCodes.Ldarg_0);
+                setIl.Emit(OpCodes.Ldarg_1);
+                setIl.Emit(OpCodes.Call, property.GetSetMethod());
+                setIl.Emit(OpCodes.Nop);
+            }
+
             setIl.Emit(OpCodes.Ldarg_0);
             setIl.Emit(OpCodes.Ldfld, wrappedObjectFieldBuilder);
             setIl.Emit(OpCodes.Ldtoken, castedType);
@@ -406,7 +418,16 @@ namespace RollerCaster
             setIl.Emit(OpCodes.Ldtoken, property.PropertyType);
             setIl.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
             setIl.Emit(OpCodes.Ldstr, property.Name);
-            setIl.Emit(OpCodes.Ldarg_1);
+            if (useBaseImplementation)
+            {
+                setIl.Emit(OpCodes.Ldarg_0);
+                setIl.Emit(OpCodes.Call, property.GetGetMethod());
+            }
+            else
+            {
+                setIl.Emit(OpCodes.Ldarg_1);
+            }
+
             if (property.PropertyType.GetTypeInfo().IsValueType)
             {
                 setIl.Emit(OpCodes.Box, property.PropertyType);

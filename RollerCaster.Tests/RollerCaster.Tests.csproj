@@ -62,6 +62,7 @@
     <Compile Include="Data\IThing.cs" />
     <Compile Include="Data\IProduct.cs" />
     <Compile Include="Data\SpecializedMulticastObject.cs" />
+    <Compile Include="Data\TestProxy.cs" />
     <Compile Include="Given_instance_of\DynamicObject_class\when_getting_property.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\MulticastObjectTest.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_adding_an_item_to_collection.cs" />
@@ -88,7 +89,7 @@
     <Compile Include="Given_instance_of\MulticastObject_class\when_working_as_dynamic.cs" />
     <Compile Include="Given_instance_of\MulticastPropertyValue_class\when_comparing.cs" />
     <Compile Include="Given_instance_of\ProxyBase_class\when_getting_property.cs" />
-    <Compile Include="Given_instance_of\ProxyBase_class\which_inherits_from_another_class\and_inherits_event_more\when_getting_property.cs" />
+    <Compile Include="Given_instance_of\ProxyBase_class\which_inherits_from_another_class\and_inherits_even_more\when_getting_property.cs" />
     <Compile Include="Given_instance_of\ProxyBase_class\which_inherits_from_another_class\when_getting_property.cs" />
     <Compile Include="Given_instance_of\SpecializedMulticastObject_class\SpecializedMulticastObjectTest.cs" />
     <Compile Include="Given_instance_of\SpecializedMulticastObject_class\when_calling_object_methods.cs" />
