@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace RollerCaster.Reflection
 {
@@ -15,6 +16,17 @@ namespace RollerCaster.Reflection
                 }
 
                 baseType = baseType.BaseType;
+            }
+
+            return false;
+        }
+
+        internal static bool UseBaseImplementation(this PropertyInfo propertyInfo, bool useSetter = false)
+        {
+            MethodInfo element = useSetter ? propertyInfo.GetSetMethod() : propertyInfo.GetGetMethod();
+            if (propertyInfo.DeclaringType.IsClass && element != null && !element.IsAbstract)
+            {
+                return element.GetCustomAttribute<CompilerGeneratedAttribute>() == null;
             }
 
             return false;

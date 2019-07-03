@@ -22,6 +22,7 @@ namespace RollerCaster
         private static readonly AssemblyBuilder AssemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName, AssemblyBuilderAccess.Run);
 #endif
         private static readonly ModuleBuilder ModuleBuilder = AssemblyBuilder.DefineDynamicModule(AssemblyNameString + "dll");
+        private static readonly MethodInfo EqualsMethodInfo = typeof(object).GetMethod("Equals", BindingFlags.Static | BindingFlags.Public);
         private static readonly MethodInfo GetPropertyMethodInfo;
         private static readonly MethodInfo SetPropertyMethodInfo;
 
@@ -353,6 +354,8 @@ namespace RollerCaster
 
             if (specialFieldBuilder == null)
             {
+                bool shouldUseBaseImplementation = property.UseBaseImplementation(false);
+                Label label = getIl.DefineLabel();
                 getIl.Emit(OpCodes.Nop);
                 getIl.Emit(OpCodes.Ldarg_0);
                 getIl.Emit(OpCodes.Ldfld, wrappedObjectFieldBuilder);
@@ -363,6 +366,54 @@ namespace RollerCaster
                 getIl.Emit(OpCodes.Ldstr, property.Name);
                 getIl.Emit(OpCodes.Callvirt, GetPropertyMethodInfo);
                 getIl.Emit(property.PropertyType.GetTypeInfo().IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, property.PropertyType);
+                if (shouldUseBaseImplementation)
+                {
+                    LocalBuilder currentValue = getIl.DeclareLocal(property.PropertyType);
+                    LocalBuilder resultValue = getIl.DeclareLocal(property.PropertyType);
+                    LocalBuilder equalsResult = getIl.DeclareLocal(typeof(bool));
+                    getIl.Emit(OpCodes.Stloc, currentValue);
+                    getIl.Emit(OpCodes.Ldarg_0);
+                    getIl.Emit(OpCodes.Call, property.GetGetMethod());
+                    getIl.Emit(OpCodes.Stloc, resultValue);
+                    getIl.Emit(OpCodes.Ldloc, resultValue);
+                    if (property.PropertyType.GetTypeInfo().IsValueType)
+                    {
+                        getIl.Emit(OpCodes.Box, property.PropertyType);
+                    }
+
+                    getIl.Emit(OpCodes.Ldloc, currentValue);
+                    if (property.PropertyType.GetTypeInfo().IsValueType)
+                    {
+                        getIl.Emit(OpCodes.Box, property.PropertyType);
+                    }
+
+                    getIl.Emit(OpCodes.Call, EqualsMethodInfo);
+                    getIl.Emit(OpCodes.Stloc, equalsResult);
+                    getIl.Emit(OpCodes.Ldloc, equalsResult);
+                    getIl.Emit(OpCodes.Brtrue_S, label);
+                    getIl.Emit(OpCodes.Nop);
+                    getIl.Emit(OpCodes.Ldarg_0);
+                    getIl.Emit(OpCodes.Ldfld, wrappedObjectFieldBuilder);
+                    getIl.Emit(OpCodes.Ldtoken, castedType);
+                    getIl.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
+                    getIl.Emit(OpCodes.Ldtoken, property.PropertyType);
+                    getIl.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
+                    getIl.Emit(OpCodes.Ldstr, property.Name);
+                    getIl.Emit(OpCodes.Ldloc, resultValue);
+                    if (property.PropertyType.GetTypeInfo().IsValueType)
+                    {
+                        getIl.Emit(OpCodes.Box, property.PropertyType);
+                    }
+
+                    getIl.Emit(OpCodes.Callvirt, SetPropertyMethodInfo);
+                    getIl.Emit(OpCodes.Nop);
+                    getIl.Emit(OpCodes.Ldloc, resultValue);
+                    getIl.Emit(OpCodes.Stloc, currentValue);
+                    getIl.Emit(OpCodes.Nop);
+                    getIl.MarkLabel(label);
+                    getIl.Emit(OpCodes.Ldloc, currentValue);
+                }
+
                 getIl.Emit(OpCodes.Ret);
             }
             else if (specialFieldBuilder == wrappedObjectFieldBuilder)
@@ -397,9 +448,7 @@ namespace RollerCaster
                 null,
                 new[] { property.PropertyType });
             setterBuilder.DefineParameter(1, ParameterAttributes.In, property.Name.Substring(0, 1).ToLower() + (property.Name.Length > 1 ? property.Name.Substring(1) : String.Empty));
-            var useBaseImplementation = property.DeclaringType.IsClass
-                                        && !property.GetSetMethod().IsAbstract
-                                        && property.GetSetMethod().GetCustomAttribute<CompilerGeneratedAttribute>() == null;
+            var useBaseImplementation = property.UseBaseImplementation(true);
             ILGenerator setIl = setterBuilder.GetILGenerator();
 
             setIl.Emit(OpCodes.Nop);

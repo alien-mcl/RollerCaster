@@ -34,6 +34,12 @@ namespace Given_instance_of.ProxyBase_class.which_inherits_from_another_class.an
             Proxy.SomeValue.Should().Be(10);
         }
 
+        [Test]
+        public void Should_get_another_value_serialized()
+        {
+            Proxy.AnotherValueSerialized.Should().Be("1");
+        }
+
         [SetUp]
         public void Setup()
         {
@@ -42,6 +48,7 @@ namespace Given_instance_of.ProxyBase_class.which_inherits_from_another_class.an
             Proxy.IsOrdered = true;
             Proxy.SomeValue = 10;
             Proxy.SomeValue = 5;
+            Proxy.AnotherValue = 1;
         }
     }
 }
