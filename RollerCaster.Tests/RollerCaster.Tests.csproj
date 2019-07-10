@@ -54,6 +54,8 @@
     <Compile Include="AssertionsExtensions.cs" />
     <Compile Include="Collections\DictionaryExtensions.cs" />
     <Compile Include="Collections\CollectionExtensions.cs" />
+    <Compile Include="Collections\SpecializedCollection.cs" />
+    <Compile Include="Collections\ReadOnlyCollection.cs" />
     <Compile Include="Data\SpecializedService.cs" />
     <Compile Include="Data\Service.cs" />
     <Compile Include="Data\SpecializedProduct.cs" />
@@ -72,6 +74,7 @@
     <Compile Include="Given_instance_of\MulticastObject_class\when_getting_a_property\which_is_a_reference_type\by_name.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_getting_a_property\which_is_a_reference_type\by_property.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_setting_a_property\which_is_a_reference_type\by_property.cs" />
+    <Compile Include="Given_instance_of\MulticastObject_class\when_setting_a_property\which_is_a_read_only_collection.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_undoing_the_cast.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_iterating_through_properties_set.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_casted_to_another_interface.cs" />

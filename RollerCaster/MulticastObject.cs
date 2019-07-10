@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Linq;
 using System.Reflection;
+using RollerCaster.Collections;
 using RollerCaster.Reflection;
 
 namespace RollerCaster
@@ -59,7 +60,7 @@ namespace RollerCaster
 
             Types.Add(propertyInfo.DeclaringType);
             var valueType = propertyInfo.PropertyType;
-            if (valueType.IsAnEnumerable())
+            if (valueType.IsAnEnumerable() && valueType.IsGenericCollection())
             {
                 return GetEnumerableProperty(valueType, propertyInfo);
             }
@@ -71,20 +72,24 @@ namespace RollerCaster
 
             lock (Sync)
             {
-                Dictionary<Type, Dictionary<PropertyInfo, object>> entityTypeProperties;
-                if (!Properties.TryGetValue(propertyInfo.DeclaringType, out entityTypeProperties))
+                bool success;
+                bool isDefaultValueProvided = false;
+                object value = Properties
+                    .TryGet(propertyInfo.DeclaringType, out success)
+                    .TryGet(valueType, out success)
+                    .TryGet(propertyInfo, out success);
+                if (!success)
                 {
-                    return propertyInfo.PropertyType.GetDefaultValue();
+                    isDefaultValueProvided = true;
+                    value = propertyInfo.PropertyType.GetDefaultValue();
                 }
 
-                Dictionary<PropertyInfo, object> typeProperties;
-                if (!entityTypeProperties.TryGetValue(valueType, out typeProperties))
+                if (isDefaultValueProvided && value != null && valueType == ReferenceType)
                 {
-                    return propertyInfo.PropertyType.GetDefaultValue();
+                    SetProperty(propertyInfo, value);
                 }
 
-                object value;
-                return (!typeProperties.TryGetValue(propertyInfo, out value) ? propertyInfo.PropertyType.GetDefaultValue() : value);
+                return value;
             }
         }
 
@@ -105,7 +110,7 @@ namespace RollerCaster
 
             Types.Add(propertyInfo.DeclaringType);
             var valueType = propertyInfo.PropertyType;
-            if (valueType.IsAnEnumerable())
+            if (valueType.IsAnEnumerable() && valueType.IsGenericCollection())
             {
                 SetEnumerableProperty(valueType, propertyInfo, value);
                 return;
@@ -118,18 +123,9 @@ namespace RollerCaster
 
             lock (Sync)
             {
-                Dictionary<Type, Dictionary<PropertyInfo, object>> entityTypeProperties;
-                if (!Properties.TryGetValue(propertyInfo.DeclaringType, out entityTypeProperties))
-                {
-                    Properties[propertyInfo.DeclaringType] = entityTypeProperties = new Dictionary<Type, Dictionary<PropertyInfo, object>>();
-                }
-
-                Dictionary<PropertyInfo, object> typeProperties;
-                if (!entityTypeProperties.TryGetValue(valueType, out typeProperties))
-                {
-                    entityTypeProperties[valueType] = typeProperties = new Dictionary<PropertyInfo, object>();
-                }
-
+                var typeProperties = Properties
+                    .TryGet(propertyInfo.DeclaringType, CreateNewTypePropertyBag)
+                    .TryGet(valueType, CreateNewPropertyBag);
                 if (value == null)
                 {
                     typeProperties.Remove(propertyInfo);
@@ -254,6 +250,16 @@ namespace RollerCaster
             return new MulticastObject();
         }
 
+        private static Dictionary<Type, Dictionary<PropertyInfo, object>> CreateNewTypePropertyBag()
+        {
+            return new Dictionary<Type, Dictionary<PropertyInfo, object>>();
+        }
+
+        private static Dictionary<PropertyInfo, object> CreateNewPropertyBag()
+        {
+            return new Dictionary<PropertyInfo, object>();
+        }
+
         private object GetPhysicalProperty(string propertyName)
         {
             var existingProperty = GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
@@ -281,25 +287,10 @@ namespace RollerCaster
         {
             lock (Sync)
             {
-                Dictionary<Type, Dictionary<PropertyInfo, object>> entityTypeProperties;
-                if (!Properties.TryGetValue(propertyInfo.DeclaringType, out entityTypeProperties))
-                {
-                    Properties[propertyInfo.DeclaringType] = entityTypeProperties = new Dictionary<Type, Dictionary<PropertyInfo, object>>();
-                }
-
-                Dictionary<PropertyInfo, object> typeProperties;
-                if (!entityTypeProperties.TryGetValue(ReferenceType, out typeProperties))
-                {
-                    entityTypeProperties[ReferenceType] = typeProperties = new Dictionary<PropertyInfo, object>();
-                }
-
-                object value;
-                if (!typeProperties.TryGetValue(propertyInfo, out value))
-                {
-                    typeProperties[propertyInfo] = value = valueType.GetDefaultValue();
-                }
-
-                return value;
+                return Properties
+                    .TryGet(propertyInfo.DeclaringType, CreateNewTypePropertyBag)
+                    .TryGet(ReferenceType, CreateNewPropertyBag)
+                    .TryGet(propertyInfo, () => valueType.GetDefaultValue());
             }
         }
 
@@ -307,24 +298,10 @@ namespace RollerCaster
         {
             lock (Sync)
             {
-                Dictionary<Type, Dictionary<PropertyInfo, object>> entityTypeProperties;
-                if (!Properties.TryGetValue(propertyInfo.DeclaringType, out entityTypeProperties))
-                {
-                    Properties[propertyInfo.DeclaringType] = entityTypeProperties = new Dictionary<Type, Dictionary<PropertyInfo, object>>();
-                }
-
-                Dictionary<PropertyInfo, object> typeProperties;
-                if (!entityTypeProperties.TryGetValue(ReferenceType, out typeProperties))
-                {
-                    entityTypeProperties[ReferenceType] = typeProperties = new Dictionary<PropertyInfo, object>();
-                }
-
-                object currentValue;
-                if (!typeProperties.TryGetValue(propertyInfo, out currentValue))
-                {
-                    typeProperties[propertyInfo] = currentValue = valueType.GetDefaultValue();
-                }
-
+                var currentValue = Properties
+                   .TryGet(propertyInfo.DeclaringType, CreateNewTypePropertyBag)
+                   .TryGet(ReferenceType, CreateNewPropertyBag)
+                   .TryGet(propertyInfo, () => valueType.GetDefaultValue());
                 var enumerable = (IEnumerable)currentValue;
                 var currentValueType = currentValue.GetType().GetItemType();
                 if ((value != null) && (currentValueType.IsInstanceOfType(value)))

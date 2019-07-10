@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using RollerCaster.Collections;
 
 namespace RollerCaster.Data
 {
@@ -58,5 +60,11 @@ namespace RollerCaster.Data
                 _shouldDeserialize = true;
             }
         }
+
+        public virtual SpecializedCollection SomeValues { get; }
+
+        public virtual ICollection<string> SomeAnotherValues { get; }
+
+        public virtual ReadOnlyCollection YetAnotherValues { get; set; }
     }
 }

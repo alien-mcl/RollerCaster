@@ -54,9 +54,9 @@ namespace Given_instance_of.TypeExtensions_class
         }
 
         [Test]
-        public void Should_create_an_observable_list_when_an_array_is_needed()
+        public void Should_create_an_array_when_an_array_is_needed()
         {
-            typeof(int[]).GetDefaultValue().Should().BeOfType<ObservableList<int>>();
+            typeof(int[]).GetDefaultValue().Should().BeOfType<int[]>();
         }
 
         [Test]

@@ -69,6 +69,23 @@ namespace RollerCaster.Reflection
                 }
             };
 
+        private static readonly Type[] NonGenericCollectionTypes =
+        {
+            typeof(IEnumerable),
+            typeof(ICollection),
+            typeof(IList),
+            typeof(IDictionary)
+        };
+
+        private static readonly Type[] GenericCollectionTypes =
+        {
+            typeof(IEnumerable<>),
+            typeof(ICollection<>),
+            typeof(IList<>),
+            typeof(IDictionary<,>),
+            typeof(ISet<>)
+        };
+
         /// <summary>Determines whether the given <paramref name="type" /> is an enumerable type.</summary>
         /// <param name="type">The type to be checked.</param>
         /// <returns><b>true</b> if the <paramref name="type" /> is enumerable, but not neither a string nor an array of bytes; otherwise, <b>false</b>.</returns>
@@ -164,29 +181,40 @@ namespace RollerCaster.Reflection
                 return null;
             }
 
-            var valueTypeInfo = valueType.GetTypeInfo();
             if (!valueType.IsAnEnumerable())
             {
-                return (valueTypeInfo.IsValueType ? Activator.CreateInstance(valueType) : null);
+                return (valueType.IsValueType ? Activator.CreateInstance(valueType) : null);
             }
 
-            Type collectionType;
-            if (valueType.IsADictionary())
+            Func<object> factory = null;
+            ConstructorInfo ctor = null;
+            object[] arguments = null;
+            var baseCollectionType = valueType.GetBaseCollectionType();
+            IDictionary<CollectionOptions, Type> collectionCtors;
+            if (baseCollectionType != null && CollectionConstructors.TryGetValue(baseCollectionType, out collectionCtors))
             {
-                collectionType = (!valueTypeInfo.IsGenericType
-                    ? CollectionConstructors[typeof(IDictionary)][options]
-                    : CollectionConstructors[typeof(IDictionary<,>)][options].MakeGenericType(valueType.GetGenericArguments()));
+                var type = collectionCtors[options];
+                ctor = (type.IsGenericType ? type.MakeGenericType(valueType.GetGenericArguments()) : type).GetConstructor(Type.EmptyTypes);
             }
-            else if (valueType.IsASet())
+            else if (valueType.IsArray)
             {
-                collectionType = CollectionConstructors[typeof(ISet<>)][options].MakeGenericType(valueType.GetItemType());
+                factory = () => Array.CreateInstance(valueType.GetElementType(), 0);
             }
             else
             {
-                collectionType = CollectionConstructors[typeof(IList<>)][options].MakeGenericType(valueType.GetItemType());
+                ctor = valueType.GetConstructors()
+                    .FirstOrDefault(_ => _.GetParameters().Length == 1 && _.GetParameters()[0].ParameterType.IsAnEnumerable());
+                if (ctor != null)
+                {
+                    arguments = new object[] { Array.CreateInstance(ctor.GetParameters()[0].ParameterType.GetItemType(), 0) };
+                }
+                else
+                {
+                    ctor = valueType.GetConstructor(Type.EmptyTypes);
+                }
             }
 
-            return collectionType.GetConstructor(Type.EmptyTypes).Invoke(null);
+            return factory != null ? factory() : ctor.Invoke(arguments);
         }
 
         /// <summary>Gets a type of an item in the collection.</summary>
@@ -205,13 +233,12 @@ namespace RollerCaster.Reflection
                 return type.GetElementType();
             }
 
-            var typeInfo = type.GetTypeInfo();
-            if (!typeInfo.IsGenericType)
+            if (!type.IsGenericType)
             {
                 return type;
             }
 
-            var genericTypeDefinition = typeInfo.GetGenericTypeDefinition();
+            var genericTypeDefinition = type.GetGenericTypeDefinition();
             if (genericTypeDefinition.GetInterfaces().Any(@interface => @interface == typeof(IDictionary<,>)))
             {
                 return typeof(KeyValuePair<,>).MakeGenericType(type.GetGenericArguments());
@@ -265,6 +292,12 @@ namespace RollerCaster.Reflection
             return null;
         }
 
+        internal static bool IsGenericCollection(this Type type)
+        {
+            return (!type.IsGenericType && NonGenericCollectionTypes.Contains(type))
+                   || (type.IsGenericType && GenericCollectionTypes.Contains(type.GetGenericTypeDefinition()));
+        }
+
         internal static void AddEnumerationValue(this Type valueType, IEnumerable currentValue, object value)
         {
             var add = currentValue.GetType().GetMethod("Add") ?? currentValue.GetAddMethod(valueType);
@@ -308,6 +341,26 @@ namespace RollerCaster.Reflection
             }
 
             add.Invoke(currentValue, parameters.ToArray());
+        }
+
+        private static Type GetBaseCollectionType(this Type type)
+        {
+            if (type.IsADictionary())
+            {
+                return !type.IsGenericType ? typeof(IDictionary) : typeof(IDictionary<,>);
+            }
+
+            if (type.IsASet())
+            {
+                return typeof(ISet<>);
+            }
+            
+            if (type.IsGenericCollection())
+            {
+                return typeof(IList<>);
+            }
+
+            return null;
         }
     }
 }

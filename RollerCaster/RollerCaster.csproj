@@ -43,6 +43,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Collections\DictionaryExtensions.cs" />
     <Compile Include="Collections\IObservableCollection.cs" />
     <Compile Include="Collections\ObservableList.cs" />
     <Compile Include="DynamicExtensions.cs" />

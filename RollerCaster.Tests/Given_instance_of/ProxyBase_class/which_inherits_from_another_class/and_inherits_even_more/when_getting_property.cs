@@ -1,6 +1,8 @@
-﻿using FluentAssertions;
+﻿using System.Linq;
+using FluentAssertions;
 using NUnit.Framework;
 using RollerCaster;
+using RollerCaster.Collections;
 using RollerCaster.Data;
 
 namespace Given_instance_of.ProxyBase_class.which_inherits_from_another_class.and_inherits_even_more
@@ -40,6 +42,30 @@ namespace Given_instance_of.ProxyBase_class.which_inherits_from_another_class.an
             Proxy.AnotherValueSerialized.Should().Be("1");
         }
 
+        [Test]
+        public void Should_get_specialized_collection_value()
+        {
+            Proxy.SomeValues.Should().BeOfType<SpecializedCollection>()
+                .Which.Should().HaveCount(1)
+                .And.Subject.First().Should().Be("SomeValues");
+        }
+
+        [Test]
+        public void Should_get_auto_generated_collection_value()
+        {
+            Proxy.SomeAnotherValues.Should().BeOfType<ObservableList<string>>()
+                .Which.Should().HaveCount(1)
+                .And.Subject.First().Should().Be("SomeAnotherValues");
+        }
+
+        [Test]
+        public void Should_get_read_only_collection_value()
+        {
+            Proxy.YetAnotherValues.Should().BeOfType<ReadOnlyCollection>()
+                .Which.Should().HaveCount(1)
+                .And.Subject.First().Should().Be("YetAnotherValues");
+        }
+
         [SetUp]
         public void Setup()
         {
@@ -49,6 +75,9 @@ namespace Given_instance_of.ProxyBase_class.which_inherits_from_another_class.an
             Proxy.SomeValue = 10;
             Proxy.SomeValue = 5;
             Proxy.AnotherValue = 1;
+            Proxy.SomeValues.Add("SomeValues");
+            Proxy.SomeAnotherValues.Add("SomeAnotherValues");
+            Proxy.YetAnotherValues = new ReadOnlyCollection(new[] { "YetAnotherValues" });
         }
     }
 }
