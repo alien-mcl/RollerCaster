@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Linq;
@@ -21,7 +23,6 @@ namespace RollerCaster
             Sync = new Object();
             Properties = new Dictionary<Type, Dictionary<Type, Dictionary<PropertyInfo, object>>>();
             Types = new HashSet<Type>();
-            TypeProperties = new Dictionary<Type, IEnumerable<PropertyInfo>>();
         }
 
         /// <summary>Gets casted types.</summary>
@@ -30,14 +31,25 @@ namespace RollerCaster
         /// <summary>Gets a collection of property values.</summary>
         public virtual IEnumerable<MulticastPropertyValue> PropertyValues { get { return new MulticastPropertyValueCollection(this); } }
 
+        internal static IDictionary<MethodInfo, MethodInfo> MethodImplementations { get; }
+            = new ConcurrentDictionary<MethodInfo, MethodInfo>();
+
         internal Dictionary<Type, Dictionary<Type, Dictionary<PropertyInfo, object>>> Properties { get; }
 
         internal HashSet<Type> Types { get; }
 
-        internal Dictionary<Type, IEnumerable<PropertyInfo>> TypeProperties { get; }
-
         /// <summary>Gets the multi-threading synchronization context used by this instance.</summary>
         protected object Sync { get; }
+
+        /// <summary>Starts a method implementation mapping.</summary>
+        /// <typeparam name="T">Type to map with method implementations.</typeparam>
+        /// <returns>Method implementation builder.</returns>
+        public static MethodImplementationBuilder<T> ImplementationOf<T>()
+        {
+            var map = new ObservableDictionary<MethodInfo, MethodInfo>();
+            map.CollectionChanged += OnMethodImplementationAdded;
+            return new MethodImplementationBuilder<T>(map);
+        }
 
         /// <summary>Gets the property value.</summary>
         /// <param name="propertyInfo">Property to obtain value of.</param>
@@ -58,7 +70,7 @@ namespace RollerCaster
                 return result;
             }
 
-            Types.Add(propertyInfo.DeclaringType);
+            this.EnsureDetailsOf(propertyInfo.DeclaringType);
             var valueType = propertyInfo.PropertyType;
             if (valueType.IsAnEnumerable() && valueType.IsGenericCollection())
             {
@@ -108,7 +120,7 @@ namespace RollerCaster
                 return;
             }
 
-            Types.Add(propertyInfo.DeclaringType);
+            this.EnsureDetailsOf(propertyInfo.DeclaringType);
             var valueType = propertyInfo.PropertyType;
             if (valueType.IsAnEnumerable() && valueType.IsGenericCollection())
             {
@@ -141,57 +153,50 @@ namespace RollerCaster
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "This method is supposed to try do something. Suppression is OK here.")]
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
+            var output = false;
             result = null;
-            var propertyInfo = (
-                from type in Properties
-                from alignment in type.Value
-                from property in alignment.Value
-                where property.Key.Name == binder.Name
-                select property.Key).FirstOrDefault();
-            if (propertyInfo == null)
+            var propertyInfo = FindUsedPropertyByName(binder?.Name);
+            if (propertyInfo != null)
             {
-                return false;
+                try
+                {
+                    result = GetProperty(propertyInfo);
+                    output = true;
+                }
+                catch
+                {
+                    //// Suppress any exceptions as we try to get a member.
+                }
             }
 
-            try
-            {
-                result = GetProperty(propertyInfo);
-                return true;
-            }
-            catch
-            {
-                //// Suppress any exceptions as we try to get a member.
-            }
-
-            return false;
+            return output;
         }
 
         /// <inheritdoc />
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "This method is supposed to try do something. Suppression is OK here.")]
         public override bool TrySetMember(SetMemberBinder binder, object value)
         {
+            var output = false;
             var propertyInfo = (
-                from type in Properties
-                from alignment in type.Value
-                from property in alignment.Value
-                where property.Key.Name == binder.Name
-                select property.Key).FirstOrDefault();
-            if (propertyInfo == null)
+                from type in DynamicExtensions.TypeProperties
+                from property in type.Value
+                where property.Name == binder.Name
+                select property).FirstOrDefault()
+                ?? FindUsedPropertyByName(binder.Name);
+            if (propertyInfo != null)
             {
-                return false;
+                try
+                {
+                    SetProperty(propertyInfo, value);
+                    output = true;
+                }
+                catch
+                {
+                    //// Suppress any exceptions as we try to get a member.
+                }
             }
 
-            try
-            {
-                SetProperty(propertyInfo, value);
-                return true;
-            }
-            catch
-            {
-                //// Suppress any exceptions as we try to get a member.
-            }
-
-            return false;
+            return output;
         }
 
         /// <summary>Clones this instance.</summary>
@@ -248,6 +253,20 @@ namespace RollerCaster
         protected virtual MulticastObject CreateChildInstance()
         {
             return new MulticastObject();
+        }
+        
+        private static void OnMethodImplementationAdded(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (e.Action == NotifyCollectionChangedAction.Add)
+            {
+                foreach (KeyValuePair<MethodInfo, MethodInfo> entry in e.NewItems)
+                {
+                    if (!MethodImplementations.ContainsKey(entry.Key))
+                    {
+                        MethodImplementations.Add(entry.Key, entry.Value);
+                    }
+                }
+            }
         }
 
         private static Dictionary<Type, Dictionary<PropertyInfo, object>> CreateNewTypePropertyBag()
@@ -316,6 +335,16 @@ namespace RollerCaster
                     valueType.CopyEnumeration(enumerable, (IEnumerable)value);
                 }
             }
+        }
+
+        private PropertyInfo FindUsedPropertyByName(string name)
+        {
+            return (
+                from type in Properties
+                from alignment in type.Value
+                from property in alignment.Value
+                where property.Key.Name == name
+                select property.Key).FirstOrDefault();
         }
     }
 }

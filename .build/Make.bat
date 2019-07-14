@@ -20,10 +20,11 @@ ECHO Building up Nuget packages
 MD NugetBuild
 MD NugetBuild\lib
 MD NugetBuild\lib\net461
-MD NugetBuild\lib\netstandard14
+MD NugetBuild\lib\netstandard2.0
 COPY RollerCaster\bin\Release\RollerCaster.dll NugetBuild\lib\net461
 COPY RollerCaster\bin\Release\RollerCaster.xml NugetBuild\lib\net461
-COPY RollerCaster\bin\Release\netstandard2.0\RollerCaster.dll NugetBuild\lib\netstandard14
+COPY RollerCaster\bin\Release\netstandard2.0\RollerCaster.dll NugetBuild\lib\netstandard2.0
 COPY ".nuget\RollerCaster.nuspec" NugetBuild
 COPY "LICENCE.md" NugetBuild
+COPY "README.md" NugetBuild
 ".build\nuget" pack NugetBuild\RollerCaster.nuspec -version %tag:~1%.%version%.%release% -outputdirectory NugetBuild

@@ -3,7 +3,7 @@
 namespace RollerCaster
 {
     /// <summary>Abstract of the proxy object.</summary>
-    internal interface IProxy
+    public interface IProxy
     {
         /// <summary>Gets the wrapped object.</summary>
         MulticastObject WrappedObject { get; }

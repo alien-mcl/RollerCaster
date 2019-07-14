@@ -26,7 +26,17 @@ namespace RollerCaster.Reflection
         /// <inheritdoc />
         public int GetHashCode(PropertyInfo obj)
         {
-            return obj != null ? (obj.DeclaringType?.GetHashCode() ?? 0) ^ obj.PropertyType.GetHashCode() ^ obj.Name.GetHashCode() : 0;
+            var result = 0;
+            if (obj != null)
+            {
+                result = obj.PropertyType.GetHashCode() ^ obj.Name.GetHashCode();
+                if (obj.DeclaringType != null)
+                {
+                    result ^= obj.DeclaringType.GetHashCode();
+                }
+            }
+
+            return result;
         }
 
         private static bool EqualsInternal(PropertyInfo x, PropertyInfo y)

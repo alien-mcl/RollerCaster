@@ -8,8 +8,6 @@ namespace RollerCaster.Collections
 {
     /// <summary>Wraps a <see cref="List{T}" /> with an implementation of the <see cref="INotifyCollectionChanged" />.</summary>
     /// <typeparam name="T">Type of items stored.</typeparam>
-    [ExcludeFromCodeCoverage]
-    [SuppressMessage("UnitTests", "TS0000:NoUnitTests", Justification = "This acts as an observable wrapper around a real list.")]
     [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Semantically it is more than a collection.")]
     public sealed class ObservableList<T> : IList<T>, IList, IObservableCollection
     {
@@ -40,7 +38,7 @@ namespace RollerCaster.Collections
         }
 
         /// <inheritdoc />
-        bool ICollection<T>.IsReadOnly { get { return ((ICollection<T>)_list).IsReadOnly; } }
+        bool ICollection<T>.IsReadOnly { get { return _list.IsReadOnly; } }
 
         /// <inheritdoc />
         object ICollection.SyncRoot { get { return ((ICollection)_list).SyncRoot; } }
@@ -69,7 +67,19 @@ namespace RollerCaster.Collections
             {
                 lock (_list)
                 {
+                    bool isChange = false;
+                    T oldValue = default(T);
+                    if (CollectionChanged != null && !Equals(_list[index], value))
+                    {
+                        isChange = true;
+                        oldValue = _list[index];
+                    }
+
                     _list[index] = value;
+                    if (isChange)
+                    {
+                        CollectionChanged.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, value, oldValue));
+                    }
                 }
             }
         }
@@ -79,18 +89,12 @@ namespace RollerCaster.Collections
         {
             get
             {
-                lock (_list)
-                {
-                    return ((IList)_list)[index];
-                }
+                return this[index];
             }
 
             set
             {
-                lock (_list)
-                {
-                    ((IList)_list)[index] = value;
-                }
+                this[index] = (T)value;
             }
         }
 
@@ -106,31 +110,36 @@ namespace RollerCaster.Collections
         /// <inheritdoc />
         public void Add(T item)
         {
-            lock (_list)
-            {
-                _list.Add(item);
-            }
-
-            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, new[] { item }));
+            AddInternal(item);
         }
 
         /// <inheritdoc />
         int IList.Add(object value)
         {
-            return ((IList)_list).Add(value);
+            return AddInternal((T)value);
         }
 
         /// <inheritdoc />
         public void Clear()
         {
-            var removed = new T[Count];
+            NotifyCollectionChangedEventArgs e = null;
             lock (_list)
             {
-                _list.CopyTo(removed, 0);
+                if (CollectionChanged != null)
+                {
+                    var items = new T[Count];
+                    _list.CopyTo(items, 0);
+                    e = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, items);
+                }
+
                 _list.Clear();
             }
 
-            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removed));
+            if (e != null)
+            {
+                CollectionChanged.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+                CollectionChanged.Invoke(this, e);
+            }
         }
 
         /// <inheritdoc />
@@ -145,7 +154,7 @@ namespace RollerCaster.Collections
         /// <inheritdoc />
         bool IList.Contains(object value)
         {
-            return ((IList)_list).Contains(value);
+            return Contains((T)value);
         }
 
         /// <inheritdoc />
@@ -160,13 +169,10 @@ namespace RollerCaster.Collections
         /// <inheritdoc />
         void ICollection.CopyTo(Array array, int index)
         {
-            ((ICollection)_list).CopyTo(array, index);
-        }
-
-        /// <inheritdoc />
-        public IEnumerator<T> GetEnumerator()
-        {
-            return _list.GetEnumerator();
+            lock (_list)
+            {
+                ((IList)_list).CopyTo(array, index);
+            }
         }
 
         /// <inheritdoc />
@@ -181,7 +187,7 @@ namespace RollerCaster.Collections
         /// <inheritdoc />
         int IList.IndexOf(object value)
         {
-            return ((IList)_list).IndexOf(value);
+            return IndexOf((T)value);
         }
 
         /// <inheritdoc />
@@ -192,36 +198,37 @@ namespace RollerCaster.Collections
                 _list.Insert(index, item);
             }
 
-            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, new[] { item }, index));
+            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
         }
 
         /// <inheritdoc />
         void IList.Insert(int index, object value)
         {
-            ((IList)_list).Insert(index, value);
+            Insert(index, (T)value);
         }
 
         /// <inheritdoc />
         public bool Remove(T item)
         {
+            bool result = false;
             lock (_list)
             {
                 var indexOf = _list.IndexOf(item);
                 if (indexOf != -1)
                 {
                     _list.RemoveAt(indexOf);
-                    CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, new[] { item }, indexOf));
-                    return true;
+                    CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, indexOf));
+                    result = true;
                 }
             }
 
-            return false;
+            return result;
         }
 
         /// <inheritdoc />
         void IList.Remove(object value)
         {
-            ((IList)_list).Remove(value);
+            Remove((T)value);
         }
 
         /// <inheritdoc />
@@ -234,13 +241,35 @@ namespace RollerCaster.Collections
                 _list.RemoveAt(index);
             }
 
-            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, new[] { item }, index));
+            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
+        }
+
+        /// <inheritdoc />
+        public IEnumerator<T> GetEnumerator()
+        {
+            lock (_list)
+            {
+                return _list.GetEnumerator();
+            }
         }
 
         /// <inheritdoc />
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((IEnumerable)_list).GetEnumerator();
+            return GetEnumerator();
+        }
+
+        private int AddInternal(T item)
+        {
+            int result;
+            lock (_list)
+            {
+                _list.Add(item);
+                result = _list.Count;
+            }
+
+            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item));
+            return result;
         }
     }
 }

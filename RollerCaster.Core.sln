@@ -18,15 +18,19 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".config", ".config", "{76650E80-AE00-47D6-BE23-5BC480A7D6C4}"
 	ProjectSection(SolutionItems) = preProject
 		LICENCE.md = LICENCE.md
-		RollerCaster.DotSettings = RollerCaster.DotSettings
 		RollerCaster.ruleset = RollerCaster.ruleset
-		RollerCaster.sln.DotSettings = RollerCaster.sln.DotSettings
 		RollerCaster.Tests.ruleset = RollerCaster.Tests.ruleset
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{7E10E4A2-B223-4C6D-ADDA-707BF54F2615}"
 	ProjectSection(SolutionItems) = preProject
 		.nuget\RollerCaster.nuspec = .nuget\RollerCaster.nuspec
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".doc", ".doc", "{E8F27F48-7C82-4466-837D-1F9CD2B11251}"
+	ProjectSection(SolutionItems) = preProject
+		LICENCE.md = LICENCE.md
+		README.md = README.md
 	EndProjectSection
 EndProject
 Global
@@ -46,5 +50,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A04BBC51-989B-45AF-9D0A-D38C14F3F916}
 	EndGlobalSection
 EndGlobal

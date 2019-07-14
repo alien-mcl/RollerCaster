@@ -45,6 +45,7 @@
   <ItemGroup>
     <Compile Include="Collections\DictionaryExtensions.cs" />
     <Compile Include="Collections\IObservableCollection.cs" />
+    <Compile Include="Collections\ObservableDictionary.cs" />
     <Compile Include="Collections\ObservableList.cs" />
     <Compile Include="DynamicExtensions.cs" />
     <Compile Include="MulticastObject.cs" />
@@ -54,8 +55,13 @@
     <Compile Include="MulticastPropertyValueCollection.cs" />
     <Compile Include="MulticastPropertyValueEnumerator.cs" />
     <Compile Include="MulticastObjectHelper.cs" />
+    <Compile Include="Reflection\HiddenPropertyInfo.cs" />
+    <Compile Include="Reflection\MethodImplementationBuilder.cs" />
     <Compile Include="Reflection\PropertyExtensions.cs" />
     <Compile Include="Reflection\PropertyInfoEqualityComparer.cs" />
+    <Compile Include="Reflection\SpecificActionImplementationBuilder.cs" />
+    <Compile Include="Reflection\SpecificFuncImplementationBuilder.cs" />
+    <Compile Include="Reflection\SpecificMethodImplementationBuilder.cs" />
     <Compile Include="Reflection\TypeExtensions.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using FluentAssertions;
+﻿using FluentAssertions;
 using NUnit.Framework;
 using RollerCaster;
 using RollerCaster.Data;
@@ -9,11 +8,6 @@ namespace Given_instance_of.DynamicObject_class
     [TestFixture]
     public class when_getting_property
     {
-        public interface ITestResource
-        {
-            string Test { get; set; }
-        }
-
         private MulticastObject Proxy { get; set; }
 
         private dynamic Dynamic { get; set; }
@@ -34,8 +28,8 @@ namespace Given_instance_of.DynamicObject_class
         public void Setup()
         {
             Proxy = new MulticastObject();
-            Proxy.SetProperty(typeof(ITestResource).GetTypeInfo().GetProperty("Test"), "Test");
-            Dynamic = Proxy.ActLike<IProduct>();
+            Dynamic = Proxy.ActLike<ITestResource>();
+            Dynamic.Test = "Test";
         }
     }
 }

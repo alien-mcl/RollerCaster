@@ -252,6 +252,14 @@ namespace RollerCaster.Reflection
             return type.GetGenericArguments()[0];
         }
 
+        /// <summary>Checks whether the given <paramref name="type" /> can have a <i>null</i> value.</summary>
+        /// <param name="type">Type to check.</param>
+        /// <returns><i>true</i> in case a given <paramref name="type" /> is either a class or <see cref="Nullable{T}" />; otherwise <i>false</i>.</returns>
+        public static bool CanHaveNullValue(this Type type)
+        {
+            return type != null && (type.IsClass || (type.IsValueType && type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)));
+        }
+
         /// <summary>Finds a property in the given <paramref name="type" /> including it's implemented interfaces.</summary>
         /// <param name="type">Type to search through.</param>
         /// <param name="name">Property name to search for.</param>
@@ -275,21 +283,19 @@ namespace RollerCaster.Reflection
             }
 
             var result = (propertyType != null ? type.GetProperty(name, propertyType) : type.GetProperty(name));
-            if (result != null)
+            if (result == null)
             {
-                return result;
-            }
-
-            foreach (var @interface in type.GetInterfaces())
-            {
-                result = (propertyType != null ? @interface.GetProperty(name, propertyType) : @interface.GetProperty(name));
-                if (result != null)
+                foreach (var @interface in type.GetInterfaces())
                 {
-                    return result;
+                    result = (propertyType != null ? @interface.GetProperty(name, propertyType) : @interface.GetProperty(name));
+                    if (result != null)
+                    {
+                        break;
+                    }
                 }
             }
 
-            return null;
+            return result;
         }
 
         internal static bool IsGenericCollection(this Type type)

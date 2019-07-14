@@ -8,6 +8,7 @@ using NUnit.Framework;
 using RollerCaster;
 using RollerCaster.Collections;
 using RollerCaster.Data;
+using RollerCaster.Reflection;
 
 namespace Given_instance_of.MulticastObject_class
 {
@@ -65,6 +66,7 @@ namespace Given_instance_of.MulticastObject_class
             product.Price = 3.14159;
             var thing = MulticastObject.ActLike<IThing>();
             thing.Description = "Description";
+            MulticastObject.SetProperty(new HiddenPropertyInfo("_HiddenProperty", typeof(string), typeof(IThing)), "IgnoreMe");
         }
     }
 }

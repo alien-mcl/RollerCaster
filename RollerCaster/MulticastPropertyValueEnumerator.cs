@@ -13,6 +13,8 @@ namespace RollerCaster
     {
         private const int PropertyLevel = 0;
         private const int EntityTypeLevel = 2;
+        private const int IsOnPropertyLevel = 3;
+        private const int IsOnTypeLevel = 2;
 
         private readonly MulticastObject _multicastObject;
         private readonly Stack<Tuple<IDictionary, IEnumerator>> _stack;
@@ -113,15 +115,20 @@ namespace RollerCaster
 
         private bool MoveNextInternal()
         {
-            IEnumerator currentEnumerator;
-            if (_stack.Peek().Item2.MoveNext())
+            while (_stack.Peek().Item2.MoveNext()
+                && (_stack.Count < IsOnPropertyLevel
+                    || (_stack.Count == IsOnPropertyLevel
+                        && !((PropertyInfo)((DictionaryEntry)_stack.Peek().Item2.Current).Key)
+                            .Name.StartsWith(HiddenPropertyInfo.HiddenPropertyNameIndicator, StringComparison.OrdinalIgnoreCase))))
             {
                 return true;
             }
-            else if (_stack.Count == 2)
+
+            IEnumerator currentEnumerator;
+            if (_stack.Count == IsOnTypeLevel)
             {
                 var currentType = (Type)((DictionaryEntry)_stack.Last().Item2.Current).Key;
-                var unvisitedProperties = _multicastObject.TypeProperties[currentType]
+                var unvisitedProperties = DynamicExtensions.TypeProperties[currentType]
                     .Except(_visitedEntityProperties, PropertyInfoEqualityComparer.Default);
                 if (unvisitedProperties.Any())
                 {
@@ -145,27 +152,26 @@ namespace RollerCaster
                 return false;
             }
 
-            if (_stack.Count <= 2)
+            if (_stack.Count <= IsOnTypeLevel)
             {
                 var current = (IDictionary)((DictionaryEntry)_stack.Peek().Item2.Current).Value;
                 _stack.Push(new Tuple<IDictionary, IEnumerator>(current, currentEnumerator = current.GetEnumerator()));
                 return currentEnumerator.MoveNext();
             }
-            else
-            {
-                return true;
-            }
+
+            return true;
         }
 
         private bool ResetInternal(IDictionary dictionary)
         {
-            if (dictionary.Count == 0)
+            var result = false;
+            if (dictionary.Count != 0)
             {
-                return false;
+                result = true;
+                _stack.Push(new Tuple<IDictionary, IEnumerator>(dictionary, dictionary.GetEnumerator()));
             }
 
-            _stack.Push(new Tuple<IDictionary, IEnumerator>(dictionary, dictionary.GetEnumerator()));
-            return true;
+            return result;
         }
 
         private void MarkAsVisited(PropertyInfo propertyInfo)
