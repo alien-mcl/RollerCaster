@@ -44,13 +44,13 @@ namespace Given_instance_of.TypeExtensions_class
         [Test]
         public void Should_create_a_concurrent_dictionary_when_a_concurrent_dictionary_is_needed()
         {
-            typeof(IDictionary<int, int>).GetDefaultValue().Should().BeOfType<ConcurrentDictionary<int, int>>();
+            typeof(IDictionary<int, int>).GetDefaultValue(CollectionOptions.Concurrent).Should().BeOfType<ConcurrentDictionary<int, int>>();
         }
 
         [Test]
-        public void Should_create_a_hash_set_when_a_set_is_needed()
+        public void Should_create_an_observable_set_when_a_set_is_needed()
         {
-            typeof(ISet<int>).GetDefaultValue().Should().BeOfType<HashSet<int>>();
+            typeof(ISet<int>).GetDefaultValue().Should().BeOfType<ObservableSet<int>>();
         }
 
         [Test]

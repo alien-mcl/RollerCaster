@@ -101,6 +101,10 @@
     <Compile Include="Given_instance_of\MulticastPropertyValue_class\when_comparing.cs" />
     <Compile Include="Given_instance_of\ObservableDictionary_class\when_operating_on.cs" />
     <Compile Include="Given_instance_of\ObservableList_class\when_operating_on.cs" />
+    <Compile Include="Given_instance_of\ObservableSet_class\when_operating_on.cs" />
+    <Compile Include="Given_instance_of\ObservableSet_class\when_working_with\ScenarioTest.cs" />
+    <Compile Include="Given_instance_of\ObservableSet_class\when_working_with\while_observing.cs" />
+    <Compile Include="Given_instance_of\ObservableSet_class\when_working_with\without_observing.cs" />
     <Compile Include="Given_instance_of\PropertyInfoEqualityComparer_class\when_operating_on.cs" />
     <Compile Include="Given_instance_of\ProxyBase_class\when_getting_property.cs" />
     <Compile Include="Given_instance_of\ProxyBase_class\which_inherits_from_another_class\and_inherits_even_more\when_getting_property.cs" />

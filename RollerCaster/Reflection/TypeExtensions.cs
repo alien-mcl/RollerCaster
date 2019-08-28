@@ -35,37 +35,42 @@ namespace RollerCaster.Reflection
                 {
                     typeof(ISet<>),
                     new Dictionary<CollectionOptions, Type>()
-                        {
-                            { CollectionOptions.None, typeof(HashSet<>) },
-                            { CollectionOptions.Observable, typeof(HashSet<>) }
-                        }
+                    {
+                        { CollectionOptions.None, typeof(HashSet<>) },
+                        { CollectionOptions.Observable, typeof(ObservableSet<>) },
+                        { CollectionOptions.Concurrent, typeof(ObservableSet<>) },
+                        { CollectionOptions.Observable | CollectionOptions.Concurrent, typeof(ObservableSet<>) }
+                    }
                 },
                 {
                     typeof(IList<>),
                     new Dictionary<CollectionOptions, Type>()
-                        {
-                            { CollectionOptions.None, typeof(List<>) },
-                            { CollectionOptions.Observable, typeof(ObservableList<>) },
-                            { CollectionOptions.Concurrent, typeof(ObservableList<>) },
-                            { CollectionOptions.Observable | CollectionOptions.Concurrent, typeof(ObservableList<>) }
-                        }
+                    {
+                        { CollectionOptions.None, typeof(List<>) },
+                        { CollectionOptions.Observable, typeof(ObservableList<>) },
+                        { CollectionOptions.Concurrent, typeof(ObservableList<>) },
+                        { CollectionOptions.Observable | CollectionOptions.Concurrent, typeof(ObservableList<>) }
+                    }
                 },
                 {
                     typeof(IDictionary),
                     new Dictionary<CollectionOptions, Type>()
-                        {
-                            { CollectionOptions.None, typeof(Hashtable) },
-                            { CollectionOptions.Observable, typeof(Hashtable) }
-                        }
+                    {
+                        { CollectionOptions.None, typeof(Hashtable) },
+                        { CollectionOptions.Observable, typeof(Hashtable) },
+                        { CollectionOptions.Concurrent, typeof(Hashtable) },
+                        { CollectionOptions.Observable | CollectionOptions.Concurrent, typeof(Hashtable) }
+                    }
                 },
                 {
                     typeof(IDictionary<,>),
                     new Dictionary<CollectionOptions, Type>()
-                        {
-                            { CollectionOptions.None, typeof(Dictionary<,>) },
-                            { CollectionOptions.Concurrent, typeof(ConcurrentDictionary<,>) },
-                            { CollectionOptions.Observable, typeof(ConcurrentDictionary<,>) }
-                        }
+                    {
+                        { CollectionOptions.None, typeof(Dictionary<,>) },
+                        { CollectionOptions.Concurrent, typeof(ConcurrentDictionary<,>) },
+                        { CollectionOptions.Observable, typeof(ObservableDictionary<,>) },
+                        { CollectionOptions.Observable | CollectionOptions.Concurrent, typeof(ObservableDictionary<,>) }
+                    }
                 }
             };
 
@@ -325,7 +330,8 @@ namespace RollerCaster.Reflection
         [SuppressMessage("Microsoft.Globalization", "CA1307:SpecifyStringComparison", Justification = "String is culture invariant.")]
         private static MethodInfo GetAddMethod(this object collection, Type valueType)
         {
-            return (from method in valueType.GetRuntimeMethods()
+            return (
+                from method in valueType.GetRuntimeMethods()
                 where method.Name == "Add" || method.Name.EndsWith(".Add")
                 from parameter in method.GetParameters()
                 join genericType in collection.GetType().GenericTypeArguments on parameter.ParameterType equals genericType into parameters

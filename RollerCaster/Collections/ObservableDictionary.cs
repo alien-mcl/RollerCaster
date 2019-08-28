@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -9,7 +10,7 @@ namespace RollerCaster.Collections
     /// <summary>Provides an observable thread-safe implementation of the <see cref="IDictionary{TKey, TValue}" /> interface.</summary>
     /// <typeparam name="TKey">Type of key.</typeparam>
     /// <typeparam name="TValue">Type of value.</typeparam>
-    public sealed class ObservableDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IObservableCollection
+    public sealed class ObservableDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IObservableCollection, IDictionary
     {
         private readonly ConcurrentDictionary<TKey, TValue> _map;
 
@@ -51,9 +52,33 @@ namespace RollerCaster.Collections
         }
 
         /// <inheritdoc />
+        object ICollection.SyncRoot
+        {
+            get { return ((ICollection)_map).SyncRoot; }
+        }
+
+        /// <inheritdoc />
+        bool ICollection.IsSynchronized
+        {
+            get { return ((ICollection)_map).IsSynchronized; }
+        }
+
+        /// <inheritdoc />
+        bool IDictionary.IsReadOnly
+        {
+            get { return ((IDictionary)_map).IsReadOnly; }
+        }
+
+        /// <inheritdoc />
         bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly
         {
             get { return ((ICollection<KeyValuePair<TKey, TValue>>)_map).IsReadOnly; }
+        }
+
+        /// <inheritdoc />
+        bool IDictionary.IsFixedSize
+        {
+            get { return ((IDictionary)_map).IsFixedSize; }
         }
 
         /// <inheritdoc />
@@ -63,9 +88,21 @@ namespace RollerCaster.Collections
         }
 
         /// <inheritdoc />
+        ICollection IDictionary.Keys
+        {
+            get { return ((IDictionary)_map).Keys; }
+        }
+
+        /// <inheritdoc />
         public ICollection<TValue> Values
         {
             get { return _map.Values; }
+        }
+        
+        /// <inheritdoc />
+        ICollection IDictionary.Values
+        {
+            get { return ((IDictionary)_map).Values; }
         }
 
         /// <summary>Gets a value indicating whether there is an event handler added to the <see cref="CollectionChanged" />.</summary>
@@ -98,6 +135,13 @@ namespace RollerCaster.Collections
                 }
             }
         }
+        
+        /// <inheritdoc />
+        object IDictionary.this[object key]
+        {
+            get { return this[(TKey)key]; }
+            set { this[(TKey)key] = (TValue)value; }
+        }
 
         /// <inheritdoc />
         void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> item)
@@ -106,6 +150,12 @@ namespace RollerCaster.Collections
             {
                 CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item));
             }
+        }
+        
+        /// <inheritdoc />
+        void IDictionary.Add(object key, object value)
+        {
+            Add((TKey)key, (TValue)value);
         }
 
         /// <inheritdoc />
@@ -118,6 +168,12 @@ namespace RollerCaster.Collections
         bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> item)
         {
             return Remove(item.Key);
+        }
+        
+        /// <inheritdoc />
+        void IDictionary.Remove(object key)
+        {
+            Remove((TKey)key);
         }
 
         /// <inheritdoc />
@@ -140,6 +196,18 @@ namespace RollerCaster.Collections
         {
             return ContainsKey(item.Key);
         }
+        
+        /// <inheritdoc />
+        bool IDictionary.Contains(object key)
+        {
+            var result = false;
+            if (key is TKey)
+            {
+                result = ContainsKey((TKey)key);
+            }
+
+            return result;
+        }
 
         /// <inheritdoc />
         public bool ContainsKey(TKey key)
@@ -157,6 +225,12 @@ namespace RollerCaster.Collections
         void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
             ((ICollection<KeyValuePair<TKey, TValue>>)_map).CopyTo(array, arrayIndex);
+        }
+        
+        /// <inheritdoc />
+        void ICollection.CopyTo(Array array, int index)
+        {
+            ((IDictionary)_map).CopyTo(array, index);
         }
 
         /// <inheritdoc />
@@ -176,6 +250,12 @@ namespace RollerCaster.Collections
                 CollectionChanged.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
                 CollectionChanged.Invoke(this, e);
             }
+        }
+
+        /// <inheritdoc />
+        IDictionaryEnumerator IDictionary.GetEnumerator()
+        {
+            return ((IDictionary)_map).GetEnumerator();
         }
 
         /// <inheritdoc />

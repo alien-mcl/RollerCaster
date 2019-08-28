@@ -60,6 +60,8 @@ namespace RollerCaster
 
         internal static IDictionary<Type, ICollection<PropertyInfo>> TypeProperties { get; } = new ConcurrentDictionary<Type, ICollection<PropertyInfo>>();
 
+        internal static IDictionary<Type, List<Type>> TypeHierarchy { get; } = new ConcurrentDictionary<Type, List<Type>>();
+
         /// <summary>Undoes the <see cref="DynamicExtensions.ActLike{T}(object)" />.</summary>
         /// <remarks>This method only retracts a type cast leaving properties set untouched.</remarks>
         /// <typeparam name="T">Casted type to be undone.</typeparam>
@@ -176,16 +178,15 @@ namespace RollerCaster
 
         internal static List<Type> EnsureDetailsOf(this MulticastObject instance, Type type)
         {
-            var types = instance.Types.ToList();
-            if (!instance.Types.Contains(type))
+            List<Type> types;
+            if (!TypeHierarchy.TryGetValue(type, out types))
             {
                 types = new List<Type>();
-                instance.Types.Add(type);
+                TypeHierarchy[type] = types;
                 types.Add(type);
                 EnsurePropertiesFor(type);
                 foreach (var implementedInterface in type.GetInterfaces())
                 {
-                    instance.Types.Add(implementedInterface);
                     types.Add(implementedInterface);
                     EnsurePropertiesFor(implementedInterface);
                 }
@@ -193,10 +194,17 @@ namespace RollerCaster
                 var currentBaseType = type.BaseType;
                 while (currentBaseType != null)
                 {
-                    instance.Types.Add(currentBaseType);
                     types.Add(currentBaseType);
                     EnsurePropertiesFor(currentBaseType);
                     currentBaseType = currentBaseType.BaseType;
+                }
+            }
+
+            if (!instance.Types.Contains(type))
+            {
+                foreach (var actualType in types)
+                {
+                    instance.Types.Add(actualType);
                 }
             }
 
@@ -310,8 +318,8 @@ namespace RollerCaster
             FieldBuilder wrappedObjectFieldBuilder,
             FieldBuilder currentCastedTypeFieldBuilder)
         {
-            typeBuilder.CreateProperty(types[0], typeof(IProxy).GetProperty(nameof(IProxy.WrappedObject)), wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, wrappedObjectFieldBuilder);
-            typeBuilder.CreateProperty(types[0], typeof(IProxy).GetProperty(nameof(IProxy.CurrentCastedType)), wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, currentCastedTypeFieldBuilder);
+            typeBuilder.CreateProperty(typeof(IProxy).GetProperty(nameof(IProxy.WrappedObject)), wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, wrappedObjectFieldBuilder);
+            typeBuilder.CreateProperty(typeof(IProxy).GetProperty(nameof(IProxy.CurrentCastedType)), wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, currentCastedTypeFieldBuilder);
             var properties = from type in types
                              where type == types[0] || type.IsInterface
                              from property in type.GetProperties()
@@ -321,7 +329,7 @@ namespace RollerCaster
                              select property;
             foreach (var property in properties)
             {
-                typeBuilder.CreateProperty(types[0], property, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, null);
+                typeBuilder.CreateProperty(property, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, null);
             }
         }
 
@@ -375,23 +383,21 @@ namespace RollerCaster
 
         private static void CreateProperty(
             this TypeBuilder typeBuilder,
-            Type castedType,
             PropertyInfo property,
             FieldBuilder wrappedObjectFieldBuilder,
             FieldBuilder currentCastedTypeFieldBuilder,
             FieldBuilder specialFieldBuilder)
         {
             PropertyBuilder propertyBuilder = typeBuilder.DefineProperty(property.Name, PropertyAttributes.HasDefault, property.PropertyType, null);
-            typeBuilder.CreatePropertyGetter(castedType, property, propertyBuilder, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, specialFieldBuilder);
+            typeBuilder.CreatePropertyGetter(property, propertyBuilder, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, specialFieldBuilder);
             if (property.CanWrite && (property.GetSetMethod().IsAbstract || property.GetSetMethod().IsVirtual))
             {
-                typeBuilder.CreatePropertySetter(castedType, property, propertyBuilder, wrappedObjectFieldBuilder);
+                typeBuilder.CreatePropertySetter(property, propertyBuilder, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder);
             }
         }
 
         private static void CreatePropertyGetter(
             this TypeBuilder typeBuilder,
-            Type castedType,
             PropertyInfo property,
             PropertyBuilder propertyBuilder,
             FieldBuilder wrappedObjectFieldBuilder,
@@ -412,8 +418,8 @@ namespace RollerCaster
                 getIl.Emit(OpCodes.Nop);
                 getIl.Emit(OpCodes.Ldarg_0);
                 getIl.Emit(OpCodes.Ldfld, wrappedObjectFieldBuilder);
-                getIl.Emit(OpCodes.Ldtoken, castedType);
-                getIl.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
+                getIl.Emit(OpCodes.Ldarg_0);
+                getIl.Emit(OpCodes.Ldfld, currentCastedTypeFieldBuilder);
                 getIl.Emit(OpCodes.Ldtoken, property.PropertyType);
                 getIl.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
                 getIl.Emit(OpCodes.Ldstr, property.Name);
@@ -447,8 +453,8 @@ namespace RollerCaster
                     getIl.Emit(OpCodes.Nop);
                     getIl.Emit(OpCodes.Ldarg_0);
                     getIl.Emit(OpCodes.Ldfld, wrappedObjectFieldBuilder);
-                    getIl.Emit(OpCodes.Ldtoken, castedType);
-                    getIl.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
+                    getIl.Emit(OpCodes.Ldarg_0);
+                    getIl.Emit(OpCodes.Ldfld, currentCastedTypeFieldBuilder);
                     getIl.Emit(OpCodes.Ldtoken, property.PropertyType);
                     getIl.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
                     getIl.Emit(OpCodes.Ldstr, property.Name);
@@ -490,10 +496,10 @@ namespace RollerCaster
 
         private static void CreatePropertySetter(
             this TypeBuilder typeBuilder,
-            Type castedType,
             PropertyInfo property,
             PropertyBuilder propertyBuilder,
-            FieldBuilder wrappedObjectFieldBuilder)
+            FieldBuilder wrappedObjectFieldBuilder,
+            FieldBuilder currentCastedTypeFieldBuilder)
         {
             MethodBuilder setterBuilder = typeBuilder.DefineMethod(
                 "set_" + property.Name,
@@ -515,8 +521,8 @@ namespace RollerCaster
 
             setIl.Emit(OpCodes.Ldarg_0);
             setIl.Emit(OpCodes.Ldfld, wrappedObjectFieldBuilder);
-            setIl.Emit(OpCodes.Ldtoken, castedType);
-            setIl.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
+            setIl.Emit(OpCodes.Ldarg_0);
+            setIl.Emit(OpCodes.Ldfld, currentCastedTypeFieldBuilder);
             setIl.Emit(OpCodes.Ldtoken, property.PropertyType);
             setIl.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
             setIl.Emit(OpCodes.Ldstr, property.Name);
