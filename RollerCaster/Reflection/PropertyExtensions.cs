@@ -1,35 +1,15 @@
-﻿using System.Reflection;
-using System.Runtime.CompilerServices;
+﻿using System.Linq;
+using System.Reflection;
 
 namespace RollerCaster.Reflection
 {
     internal static class PropertyExtensions
     {
-        internal static bool OverridesBase(this PropertyInfo propertyInfo)
+        internal static bool UseBaseImplementation(this PropertyInfo propertyInfo)
         {
-            var baseType = propertyInfo.DeclaringType.BaseType;
-            while (baseType != typeof(object))
-            {
-                if (baseType.GetProperty(propertyInfo.Name, BindingFlags.Instance | BindingFlags.Public) != null)
-                {
-                    return true;
-                }
-
-                baseType = baseType.BaseType;
-            }
-
-            return false;
-        }
-
-        internal static bool UseBaseImplementation(this PropertyInfo propertyInfo, bool useSetter = false)
-        {
-            MethodInfo element = useSetter ? propertyInfo.GetSetMethod() : propertyInfo.GetGetMethod();
-            if (propertyInfo.DeclaringType.IsClass && element != null && !element.IsAbstract)
-            {
-                return element.GetCustomAttribute<CompilerGeneratedAttribute>() == null;
-            }
-
-            return false;
+            return !propertyInfo.DeclaringType.IsInterface
+                && !propertyInfo.GetAccessors().Any(_ => _.IsAbstract)
+                && !propertyInfo.PropertyType.IsAnEnumerable();
         }
     }
 }

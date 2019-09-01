@@ -27,7 +27,10 @@ namespace RollerCaster
         public virtual ICollection<Type> CastedTypes { get { return Types; } }
 
         /// <summary>Gets a collection of property values.</summary>
-        public virtual IEnumerable<MulticastPropertyValue> PropertyValues { get { return new MulticastPropertyValueCollection(this); } }
+        public virtual IEnumerable<MulticastPropertyValue> PropertyValues
+        {
+            get { return new MulticastPropertyValueCollection(this); }
+        }
 
         internal Dictionary<Type, Dictionary<Type, Dictionary<PropertyInfo, object>>> Properties { get; }
 
@@ -74,17 +77,22 @@ namespace RollerCaster
                 Dictionary<Type, Dictionary<PropertyInfo, object>> entityTypeProperties;
                 if (!Properties.TryGetValue(propertyInfo.DeclaringType, out entityTypeProperties))
                 {
-                    return propertyInfo.PropertyType.GetDefaultValue();
+                    Properties[propertyInfo.DeclaringType] = entityTypeProperties = new Dictionary<Type, Dictionary<PropertyInfo, object>>();
                 }
 
                 Dictionary<PropertyInfo, object> typeProperties;
                 if (!entityTypeProperties.TryGetValue(valueType, out typeProperties))
                 {
-                    return propertyInfo.PropertyType.GetDefaultValue();
+                    entityTypeProperties[valueType] = typeProperties = new Dictionary<PropertyInfo, object>();
                 }
 
                 object value;
-                return (!typeProperties.TryGetValue(propertyInfo, out value) ? propertyInfo.PropertyType.GetDefaultValue() : value);
+                if (!typeProperties.TryGetValue(propertyInfo, out value))
+                {
+                    typeProperties[propertyInfo] = value = propertyInfo.PropertyType.GetDefaultValue();
+                }
+
+                return value;
             }
         }
 

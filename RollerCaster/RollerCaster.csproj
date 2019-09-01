@@ -45,6 +45,7 @@
   <ItemGroup>
     <Compile Include="Collections\IObservableCollection.cs" />
     <Compile Include="Collections\ObservableList.cs" />
+    <Compile Include="Collections\TopologicSortExtensions.cs" />
     <Compile Include="DynamicExtensions.cs" />
     <Compile Include="MulticastObject.cs" />
     <Compile Include="IProxy.cs" />

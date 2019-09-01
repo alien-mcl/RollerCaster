@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using RollerCaster.Collections;
 using RollerCaster.Reflection;
 
 namespace RollerCaster
@@ -11,18 +13,37 @@ namespace RollerCaster
     /// <summary>Iterates through a collections of properties set.</summary>
     internal sealed class MulticastPropertyValueEnumerator : IEnumerator<MulticastPropertyValue>
     {
-        private const int PropertyLevel = 0;
+        private const int ObjectLevel = 0;
         private const int EntityTypeLevel = 2;
 
-        private readonly MulticastObject _multicastObject;
         private readonly Stack<Tuple<IDictionary, IEnumerator>> _stack;
-        private readonly HashSet<PropertyInfo> _visitedEntityProperties;
+        private readonly ICollection<PropertyInfo> _visitedProperties;
+        private readonly OrderedDictionary _properties;
 
         internal MulticastPropertyValueEnumerator(MulticastObject multicastObject)
         {
-            _multicastObject = multicastObject;
             _stack = new Stack<Tuple<IDictionary, IEnumerator>>(3);
-            _visitedEntityProperties = new HashSet<PropertyInfo>(PropertyInfoEqualityComparer.Default);
+            _visitedProperties = new HashSet<PropertyInfo>(PropertyInfoEqualityComparer.Default);
+            var types = new List<Type>();
+            foreach (var type in multicastObject.TypeProperties)
+            {
+                types.Add(type.Key);
+                foreach (var property in type.Value)
+                {
+                    multicastObject.GetProperty(property);
+                }
+            }
+
+            _properties = new OrderedDictionary();
+            foreach (var type in types.TopologicSort())
+            {
+                Dictionary<Type, Dictionary<PropertyInfo, object>> typeProperties;
+                if (multicastObject.Properties.TryGetValue(type, out typeProperties))
+                {
+                    _properties.Add(type, multicastObject.Properties[type]);
+                }
+            }
+
             Reset();
         }
 
@@ -44,7 +65,7 @@ namespace RollerCaster
                 {
                     switch (index)
                     {
-                        case PropertyLevel:
+                        case ObjectLevel:
                         {
                             var pair = (DictionaryEntry)item.Item2.Current;
                             property = (PropertyInfo)pair.Key;
@@ -63,7 +84,7 @@ namespace RollerCaster
                     index++;
                 }
 
-                MarkAsVisited(property);
+                _visitedProperties.Add(property);
                 return new MulticastPropertyValue(type, property, value);
             }
         }
@@ -88,11 +109,10 @@ namespace RollerCaster
         public void Reset()
         {
             _stack.Clear();
-            _visitedEntityProperties.Clear();
             for (int index = 0; index < 3; index++)
             {
-                var current = (index == PropertyLevel
-                    ? _multicastObject.Properties
+                var current = (index == ObjectLevel
+                    ? _properties
                     : (IDictionary)_stack.Peek().Item2.Current.GetType().GetTypeInfo().GetDeclaredProperty("Value").GetValue(_stack.Peek().Item2.Current));
                 if (!ResetInternal(current))
                 {
@@ -113,24 +133,22 @@ namespace RollerCaster
 
         private bool MoveNextInternal()
         {
-            IEnumerator currentEnumerator;
-            if (_stack.Peek().Item2.MoveNext())
+            while (_stack.Peek().Item2.MoveNext())
             {
-                return true;
-            }
-            else if (_stack.Count == 2)
-            {
-                var currentType = (Type)((DictionaryEntry)_stack.Last().Item2.Current).Key;
-                var unvisitedProperties = _multicastObject.TypeProperties[currentType]
-                    .Except(_visitedEntityProperties, PropertyInfoEqualityComparer.Default);
-                if (unvisitedProperties.Any())
+                if (_stack.Count == 3)
                 {
-                    var unvisitedPropertiesMap = (IDictionary)unvisitedProperties.ToDictionary(
-                        _ => _,
-                        _ => _multicastObject.GetProperty(_));
-                    currentEnumerator = unvisitedPropertiesMap.GetEnumerator();
-                    _stack.Push(new Tuple<IDictionary, IEnumerator>(unvisitedPropertiesMap, currentEnumerator));
-                    return currentEnumerator.MoveNext();
+                    PropertyInfo property;
+                    if ((property = ((DictionaryEntry)_stack.Peek().Item2.Current).Key as PropertyInfo) != null
+                        && !_visitedProperties.Any(_ => _.PropertyType == property.PropertyType
+                            && _.Name == property.Name
+                            && property.DeclaringType.IsAssignableFrom(_.DeclaringType)))
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    return true;
                 }
             }
 
@@ -148,13 +166,11 @@ namespace RollerCaster
             if (_stack.Count <= 2)
             {
                 var current = (IDictionary)((DictionaryEntry)_stack.Peek().Item2.Current).Value;
-                _stack.Push(new Tuple<IDictionary, IEnumerator>(current, currentEnumerator = current.GetEnumerator()));
-                return currentEnumerator.MoveNext();
+                _stack.Push(new Tuple<IDictionary, IEnumerator>(current, current.GetEnumerator()));
+                return MoveNextInternal();
             }
-            else
-            {
-                return true;
-            }
+
+            return true;
         }
 
         private bool ResetInternal(IDictionary dictionary)
@@ -166,11 +182,6 @@ namespace RollerCaster
 
             _stack.Push(new Tuple<IDictionary, IEnumerator>(dictionary, dictionary.GetEnumerator()));
             return true;
-        }
-
-        private void MarkAsVisited(PropertyInfo propertyInfo)
-        {
-            _visitedEntityProperties.Add(propertyInfo);
         }
     }
 }
