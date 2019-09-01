@@ -60,6 +60,10 @@
     <Compile Include="Data\IMethodCarrier.cs" />
     <Compile Include="Data\ITestResource.cs" />
     <Compile Include="Data\MethodCarrierImplementation.cs" />
+    <Compile Include="Data\SomeEntity.cs" />
+    <Compile Include="Data\SomeSpecializedEntity.cs" />
+    <Compile Include="Data\SomeSuperDuperSpecializedEntity.cs" />
+    <Compile Include="Data\SomeSuperSpecializedEntity.cs" />
     <Compile Include="Data\SpecializedService.cs" />
     <Compile Include="Data\Service.cs" />
     <Compile Include="Data\SpecializedProduct.cs" />
@@ -107,6 +111,7 @@
     <Compile Include="Given_instance_of\ObservableSet_class\when_working_with\without_observing.cs" />
     <Compile Include="Given_instance_of\PropertyInfoEqualityComparer_class\when_operating_on.cs" />
     <Compile Include="Given_instance_of\ProxyBase_class\when_getting_property.cs" />
+    <Compile Include="Given_instance_of\ProxyBase_class\when_modifying.cs" />
     <Compile Include="Given_instance_of\ProxyBase_class\which_inherits_from_another_class\and_inherits_even_more\when_getting_property.cs" />
     <Compile Include="Given_instance_of\ProxyBase_class\which_inherits_from_another_class\when_getting_property.cs" />
     <Compile Include="Given_instance_of\SpecializedMulticastObject_class\SpecializedMulticastObjectTest.cs" />

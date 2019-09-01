@@ -88,14 +88,13 @@ namespace RollerCaster
         /// <returns>Original <see cref="MulticastObject" /> instance.</returns>
         public static MulticastObject Unwrap(this object instance)
         {
-            var proxy = instance as IProxy;
-            var multicastObject = instance as MulticastObject;
-            if ((proxy == null) && (multicastObject == null))
+            MulticastObject multicastObject;
+            if (!instance.TryUnwrap(out multicastObject))
             {
                 throw new InvalidOperationException($"Unable to cast an instance that is not '{typeof(MulticastObject).Name}' related.");
             }
 
-            return proxy?.WrappedObject ?? multicastObject;
+            return multicastObject;
         }
 
         /// <summary>Tries to unwraps the original <see cref="MulticastObject" /> from the proxy.</summary>
@@ -112,6 +111,14 @@ namespace RollerCaster
             }
 
             multicastObject = proxy?.WrappedObject ?? multicastObject;
+            if (proxy?.CurrentCastedType.IsInterface == false)
+            {
+                foreach (var property in TypeProperties[proxy.CurrentCastedType])
+                {
+                    property.GetValue(proxy);
+                }
+            }
+
             return true;
         }
 
@@ -324,8 +331,7 @@ namespace RollerCaster
                              where type == types[0] || type.IsInterface
                              from property in type.GetProperties()
                              where property.CanRead
-                                 && (property.GetGetMethod().IsAbstract || property.GetGetMethod().IsVirtual)
-                                 && (type.IsInterface || (type.IsClass && !property.OverridesBase()))
+                                   && (property.GetGetMethod().IsAbstract || property.GetGetMethod().IsVirtual)
                              select property;
             foreach (var property in properties)
             {
@@ -413,7 +419,6 @@ namespace RollerCaster
 
             if (specialFieldBuilder == null)
             {
-                bool shouldUseBaseImplementation = property.UseBaseImplementation(false);
                 Label label = getIl.DefineLabel();
                 getIl.Emit(OpCodes.Nop);
                 getIl.Emit(OpCodes.Ldarg_0);
@@ -425,7 +430,7 @@ namespace RollerCaster
                 getIl.Emit(OpCodes.Ldstr, property.Name);
                 getIl.Emit(OpCodes.Callvirt, GetPropertyMethodInfo);
                 getIl.Emit(property.PropertyType.GetTypeInfo().IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, property.PropertyType);
-                if (shouldUseBaseImplementation)
+                if (property.UseBaseImplementation())
                 {
                     LocalBuilder currentValue = getIl.DeclareLocal(property.PropertyType);
                     LocalBuilder resultValue = getIl.DeclareLocal(property.PropertyType);
@@ -507,7 +512,7 @@ namespace RollerCaster
                 null,
                 new[] { property.PropertyType });
             setterBuilder.DefineParameter(1, ParameterAttributes.In, property.Name.Substring(0, 1).ToLower() + (property.Name.Length > 1 ? property.Name.Substring(1) : String.Empty));
-            var useBaseImplementation = property.UseBaseImplementation(true);
+            var useBaseImplementation = property.UseBaseImplementation();
             ILGenerator setIl = setterBuilder.GetILGenerator();
 
             setIl.Emit(OpCodes.Nop);

@@ -29,7 +29,10 @@ namespace RollerCaster
         public virtual ICollection<Type> CastedTypes { get { return Types; } }
 
         /// <summary>Gets a collection of property values.</summary>
-        public virtual IEnumerable<MulticastPropertyValue> PropertyValues { get { return new MulticastPropertyValueCollection(this); } }
+        public virtual IEnumerable<MulticastPropertyValue> PropertyValues
+        {
+            get { return new MulticastPropertyValueCollection(this); }
+        }
 
         internal static IDictionary<MethodInfo, MethodInfo> MethodImplementations { get; }
             = new ConcurrentDictionary<MethodInfo, MethodInfo>();
@@ -96,7 +99,7 @@ namespace RollerCaster
                     value = propertyInfo.PropertyType.GetDefaultValue();
                 }
 
-                if (isDefaultValueProvided && value != null && valueType == ReferenceType)
+                if (isDefaultValueProvided && value != null)
                 {
                     SetProperty(propertyInfo, value);
                 }
