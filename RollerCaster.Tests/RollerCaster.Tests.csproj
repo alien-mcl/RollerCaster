@@ -93,7 +93,8 @@
     <Compile Include="Given_instance_of\MulticastObject_class\when_working_as_dynamic.cs" />
     <Compile Include="Given_instance_of\MulticastPropertyValue_class\when_comparing.cs" />
     <Compile Include="Given_instance_of\ProxyBase_class\when_getting_property.cs" />
-    <Compile Include="Given_instance_of\ProxyBase_class\when_modifying.cs" />
+    <Compile Include="Given_instance_of\ProxyBase_class\when_modifying\through_proxy_API.cs" />
+    <Compile Include="Given_instance_of\ProxyBase_class\when_modifying\through_wired_property.cs" />
     <Compile Include="Given_instance_of\ProxyBase_class\which_inherits_from_another_class\and_inherits_even_more\when_getting_property.cs" />
     <Compile Include="Given_instance_of\ProxyBase_class\which_inherits_from_another_class\when_getting_property.cs" />
     <Compile Include="Given_instance_of\SpecializedMulticastObject_class\SpecializedMulticastObjectTest.cs" />

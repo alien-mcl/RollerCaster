@@ -4,12 +4,18 @@ using NUnit.Framework;
 using RollerCaster;
 using RollerCaster.Data;
 
-namespace Given_instance_of.ProxyBase_class
+namespace Given_instance_of.ProxyBase_class.when_modifying
 {
     [TestFixture]
-    public class when_modifying
+    public class through_wired_property
     {
         private SomeSuperDuperSpecializedEntity Entity { get; set; }
+
+        [Test]
+        public void Should_provide_same_strongly_typed_instance()
+        {
+            Entity.Unwrap().ActLike<SomeSuperDuperSpecializedEntity>().Should().Be(Entity);
+        }
 
         [Test]
         public void Should_set_id()
