@@ -14,7 +14,7 @@ namespace RollerCaster
     public static class DynamicExtensions
     {
         internal const string AssemblyNameString = "RollerCaster.Proxies";
-
+        private const string PreparePropertiesForIterationMethodName = "PreparePropertiesForIteration";
         private static readonly object Sync = new Object();
         private static readonly AssemblyName AssemblyName = new AssemblyName(AssemblyNameString);
 #if NETSTANDARD2_0
@@ -27,6 +27,12 @@ namespace RollerCaster
         private static readonly MethodInfo GetPropertyMethodInfo;
         private static readonly MethodInfo SetPropertyMethodInfo;
         private static readonly string[] AlreadyImplementedMethods = { nameof(Object.Equals), nameof(Object.GetHashCode) };
+
+        private static readonly PropertyInfo TypeInstancesPropertyInfo = typeof(MulticastObject)
+            .GetProperty(nameof(MulticastObject.TypeInstances), BindingFlags.Instance | BindingFlags.NonPublic);
+
+        private static readonly PropertyInfo GetItemPropertyInfo = typeof(Dictionary<Type, object>)
+            .GetProperty("Item", BindingFlags.Instance | BindingFlags.Public);
 
         [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline", Justification = "Unified initialization of values based on the same collection.")]
         static DynamicExtensions()
@@ -113,10 +119,7 @@ namespace RollerCaster
             multicastObject = proxy?.WrappedObject ?? multicastObject;
             if (proxy?.CurrentCastedType.IsInterface == false)
             {
-                foreach (var property in TypeProperties[proxy.CurrentCastedType])
-                {
-                    property.GetValue(proxy);
-                }
+                proxy.GetType().GetMethod(PreparePropertiesForIterationMethodName, BindingFlags.Instance | BindingFlags.NonPublic).Invoke(proxy, null);
             }
 
             return true;
@@ -225,7 +228,13 @@ namespace RollerCaster
                 return instance;
             }
 
+            object result;
             var multicastObject = instance.Unwrap();
+            if (multicastObject.TypeInstances.TryGetValue(type, out result))
+            {
+                return result;
+            }
+
             if (type.IsClass)
             {
                 ValidateClassCast(multicastObject, type);
@@ -242,7 +251,8 @@ namespace RollerCaster
                 }
             }
 
-            var result = generatedType.GetConstructors().First().Invoke(new object[] { multicastObject, type });
+            result = generatedType.GetConstructors().First().Invoke(new object[] { multicastObject, type });
+            multicastObject.TypeInstances[type] = result;
             return result;
         }
 
@@ -277,18 +287,35 @@ namespace RollerCaster
 
         private static Type CompileResultType(string name, IList<Type> types)
         {
-            var baseType = (types[0].IsInterface ? typeof(DynamicObject) : types[0]);
+            var baseType = types[0].IsInterface ? typeof(DynamicObject) : types[0];
             TypeBuilder typeBuilder = GetTypeBuilder(name, types, baseType);
             FieldBuilder wrappedObjectFieldBuilder = typeBuilder.DefineField("_wrappedObject", typeof(MulticastObject), FieldAttributes.Private);
             FieldBuilder currentCastedTypeFieldBuilder = typeBuilder.DefineField("_currentCastedType", typeof(MulticastObject), FieldAttributes.Private);
-            typeBuilder.CreateConstructor(wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, baseType);
-            typeBuilder.ImplementMethods(types);
-            typeBuilder.ImplementProperties(types, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder);
+            var properties = new List<PropertyInfo>();
+            var propertiesWithBaseImplementation = new List<PropertyInfo>();
+            var typeProperties =
+                from type in types
+                where type == types[0] || type.IsInterface
+                from property in type.GetProperties()
+                where property.CanRead && (property.GetGetMethod().IsAbstract || property.GetGetMethod().IsVirtual)
+                select property;
+            foreach (var typeProperty in typeProperties)
+            {
+                properties.Add(typeProperty);
+                if (typeProperty.UseBaseImplementation())
+                {
+                    propertiesWithBaseImplementation.Add(typeProperty);
+                }
+            }
+
+            typeBuilder.CreateConstructor(wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, baseType, propertiesWithBaseImplementation.Count > 0);
+            typeBuilder.ImplementMethods(types, propertiesWithBaseImplementation);
+            typeBuilder.ImplementProperties(properties, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder);
             Type objectType = typeBuilder.CreateTypeInfo().AsType();
             return objectType;
         }
 
-        private static void ImplementMethods(this TypeBuilder typeBuilder, IList<Type> types)
+        private static void ImplementMethods(this TypeBuilder typeBuilder, IList<Type> types, ICollection<PropertyInfo> propertiesWithBaseImplementation)
         {
             typeBuilder.CreateMethodOverrideImplementation(typeof(object).GetMethod(nameof(Object.Equals), BindingFlags.Instance | BindingFlags.Public));
             typeBuilder.CreateMethodOverrideImplementation(typeof(object).GetMethod(nameof(Object.GetHashCode), BindingFlags.Instance | BindingFlags.Public));
@@ -296,6 +323,10 @@ namespace RollerCaster
             {
                 typeBuilder.CreateMethodOverrideImplementation(typeof(DynamicObject).GetMethod(nameof(DynamicObject.TryGetMember), BindingFlags.Instance | BindingFlags.Public));
                 typeBuilder.CreateMethodOverrideImplementation(typeof(DynamicObject).GetMethod(nameof(DynamicObject.TrySetMember), BindingFlags.Instance | BindingFlags.Public));
+            }
+            else
+            {
+                typeBuilder.CreatePreparePropertiesForIterationMethod(propertiesWithBaseImplementation);
             }
 
             var methods = from type in types
@@ -321,25 +352,24 @@ namespace RollerCaster
 
         private static void ImplementProperties(
             this TypeBuilder typeBuilder,
-            IList<Type> types,
+            ICollection<PropertyInfo> properties,
             FieldBuilder wrappedObjectFieldBuilder,
             FieldBuilder currentCastedTypeFieldBuilder)
         {
             typeBuilder.CreateProperty(typeof(IProxy).GetProperty(nameof(IProxy.WrappedObject)), wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, wrappedObjectFieldBuilder);
             typeBuilder.CreateProperty(typeof(IProxy).GetProperty(nameof(IProxy.CurrentCastedType)), wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, currentCastedTypeFieldBuilder);
-            var properties = from type in types
-                             where type == types[0] || type.IsInterface
-                             from property in type.GetProperties()
-                             where property.CanRead
-                                   && (property.GetGetMethod().IsAbstract || property.GetGetMethod().IsVirtual)
-                             select property;
             foreach (var property in properties)
             {
                 typeBuilder.CreateProperty(property, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, null);
             }
         }
 
-        private static void CreateConstructor(this TypeBuilder typeBuilder, FieldBuilder wrappedObjectFieldBuilder, FieldBuilder currentCastedTypeFieldBuilder, Type baseType)
+        private static void CreateConstructor(
+            this TypeBuilder typeBuilder,
+            FieldBuilder wrappedObjectFieldBuilder,
+            FieldBuilder currentCastedTypeFieldBuilder,
+            Type baseType,
+            bool requiresPropertyBaseImplementation)
         {
             var constructorBuilder = typeBuilder.DefineConstructor(
                 MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
@@ -356,10 +386,47 @@ namespace RollerCaster
             constructorIl.Emit(OpCodes.Ldarg_0);
             constructorIl.Emit(OpCodes.Ldarg_2);
             constructorIl.Emit(OpCodes.Stfld, currentCastedTypeFieldBuilder);
+
+            if (requiresPropertyBaseImplementation)
+            {
+                constructorIl.Emit(OpCodes.Ldarg_1);
+                constructorIl.Emit(OpCodes.Callvirt, TypeInstancesPropertyInfo.GetGetMethod(true));
+                constructorIl.Emit(OpCodes.Ldarg_2);
+                constructorIl.Emit(OpCodes.Ldarg_0);
+                constructorIl.Emit(OpCodes.Callvirt, GetItemPropertyInfo.GetSetMethod());
+            }
+
             constructorIl.Emit(OpCodes.Ret);
         }
 
-        private static void CreateMethodOverrideImplementation(this TypeBuilder typeBuilder, MethodInfo methodToOverride, MethodInfo methodToCall = null)
+        private static void CreatePreparePropertiesForIterationMethod(
+            this TypeBuilder typeBuilder,
+            ICollection<PropertyInfo> propertiesWithBaseImplementation)
+        {
+            if (propertiesWithBaseImplementation.Count > 0)
+            {
+                var methodBuilder = typeBuilder.DefineMethod(
+                    PreparePropertiesForIterationMethodName,
+                    (MethodAttributes.Assembly & (~MethodAttributes.VtableLayoutMask)) | MethodAttributes.ReuseSlot,
+                    CallingConventions.HasThis);
+                var methodIl = methodBuilder.GetILGenerator();
+                methodIl.Emit(OpCodes.Nop);
+                foreach (var property in propertiesWithBaseImplementation)
+                {
+                    var value = methodIl.DeclareLocal(property.PropertyType);
+                    methodIl.Emit(OpCodes.Ldarg_0);
+                    methodIl.Emit(OpCodes.Callvirt, property.GetGetMethod());
+                    methodIl.Emit(OpCodes.Stloc, value);
+                }
+
+                methodIl.Emit(OpCodes.Ret);
+            }
+        }
+
+        private static void CreateMethodOverrideImplementation(
+            this TypeBuilder typeBuilder,
+            MethodInfo methodToOverride,
+            MethodInfo methodToCall = null)
         {
             var parameters = methodToOverride.GetParameters();
             var methodBuilder = typeBuilder.DefineMethod(
