@@ -229,29 +229,10 @@ namespace RollerCaster
             return new MulticastObject();
         }
 
-        private object GetPhysicalProperty(string propertyName)
-        {
-            var existingProperty = GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
-            if ((existingProperty != null) && (existingProperty.CanRead))
-            {
-                return existingProperty.GetValue(this);
-            }
-
-            return null;
-        }
-
-        private bool SetPhysicalProperty(string propertyName, object value)
-        {
-            var existingProperty = GetType().GetProperty(propertyName);
-            if ((existingProperty == null) || (!existingProperty.CanWrite))
-            {
-                return false;
-            }
-
-            existingProperty.SetValue(this, value);
-            return true;
-        }
-
+        /// <summary>Sets the property value.</summary>
+        /// <param name="propertyInfo">Property to set value of.</param>
+        /// <param name="value">The value to be set.</param>
+        /// <param name="instance">Optional strongly typed instance to set property on to ensure wired properties.</param>
         private void SetProperty(PropertyInfo propertyInfo, object value, object instance)
         {
             if (propertyInfo == null)
@@ -306,6 +287,29 @@ namespace RollerCaster
                     typeProperties[propertyInfo] = value;
                 }
             }
+        }
+
+        private object GetPhysicalProperty(string propertyName)
+        {
+            var existingProperty = GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+            if ((existingProperty != null) && (existingProperty.CanRead))
+            {
+                return existingProperty.GetValue(this);
+            }
+
+            return null;
+        }
+
+        private bool SetPhysicalProperty(string propertyName, object value)
+        {
+            var existingProperty = GetType().GetProperty(propertyName);
+            if ((existingProperty == null) || (!existingProperty.CanWrite))
+            {
+                return false;
+            }
+
+            existingProperty.SetValue(this, value);
+            return true;
         }
 
         private object GetEnumerableProperty(Type valueType, PropertyInfo propertyInfo)
