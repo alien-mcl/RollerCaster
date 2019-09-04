@@ -4,6 +4,10 @@ namespace RollerCaster.Data
 {
     public interface IMethodCarrier
     {
+        bool Property { get; }
+
+        bool InvalidProperty { get; set; }
+
         void Action();
 
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Justification = "Parameter name is not a hungarian notation.")]

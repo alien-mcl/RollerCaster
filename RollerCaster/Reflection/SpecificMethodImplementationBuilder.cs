@@ -18,19 +18,19 @@ namespace RollerCaster.Reflection
 
         internal MethodInfo MethodToImplement { get; }
 
-        internal void ValidateMethodsAndAdd(MethodInfo methodToImplement, MethodInfo implementationMethod)
+        internal void ValidateMethodsAndAdd(MethodInfo implementationMethod)
         {
             if (!implementationMethod.IsPublic || !implementationMethod.IsStatic
-                || methodToImplement.ReturnType != implementationMethod.ReturnType
-                || methodToImplement.GetParameters().Length + 1 != implementationMethod.GetParameters().Length
-                || !methodToImplement.GetParameters().Select(_ => _.ParameterType)
+                || MethodToImplement.ReturnType != implementationMethod.ReturnType
+                || MethodToImplement.GetParameters().Length + 1 != implementationMethod.GetParameters().Length
+                || !MethodToImplement.GetParameters().Select(_ => _.ParameterType)
                     .SequenceEqual(implementationMethod.GetParameters().Skip(1).Select(_ => _.ParameterType))
-                || !methodToImplement.DeclaringType.IsAssignableFrom(implementationMethod.GetParameters()[0].ParameterType))
+                || !MethodToImplement.DeclaringType.IsAssignableFrom(implementationMethod.GetParameters()[0].ParameterType))
             {
-                throw new InvalidOperationException($"Unable to implement '{methodToImplement.Name}' with '{implementationMethod.Name}.");
+                throw new InvalidOperationException($"Unable to implement '{MethodToImplement.Name}' with '{implementationMethod.Name}.");
             }
 
-            _owner.ImplementationDelegates.Add(MethodToImplement, implementationMethod);
+            _owner.MethodImplementationDelegates.Add(MethodToImplement, implementationMethod);
         }
     }
 }

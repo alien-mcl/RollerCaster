@@ -10,19 +10,27 @@ namespace RollerCaster.Reflection
     /// <summary>Begins a method implementation mapping.</summary>
     public class MethodImplementationBuilder
     {
-        internal MethodImplementationBuilder(IDictionary<MethodInfo, MethodInfo> map)
+        internal MethodImplementationBuilder(
+            IDictionary<MethodInfo, MethodInfo> methodsMap,
+            IDictionary<PropertyInfo, MethodInfo> propertiesMap)
         {
-            ImplementationDelegates = map;
+            MethodImplementationDelegates = methodsMap;
+            PropertyImplementationDelegates = propertiesMap;
         }
 
-        internal IDictionary<MethodInfo, MethodInfo> ImplementationDelegates { get; }
+        internal IDictionary<MethodInfo, MethodInfo> MethodImplementationDelegates { get; }
+
+        internal IDictionary<PropertyInfo, MethodInfo> PropertyImplementationDelegates { get; }
     }
 
     /// <summary>Begins a method implementation mapping.</summary>
     /// <typeparam name="T">Type of entity being mapped.</typeparam>
     public class MethodImplementationBuilder<T> : MethodImplementationBuilder
     {
-        internal MethodImplementationBuilder(IDictionary<MethodInfo, MethodInfo> map) : base(map)
+        internal MethodImplementationBuilder(
+            IDictionary<MethodInfo, MethodInfo> methodsMap,
+            IDictionary<PropertyInfo, MethodInfo> propertiesMap)
+            : base(methodsMap, propertiesMap)
         {
         }
 
@@ -30,8 +38,7 @@ namespace RollerCaster.Reflection
         /// <param name="method">Method to implement.</param>
         /// <returns>Method implementation builder.</returns>
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures", Justification = "This is part of a fluent-like API and strong typing is essential.")]
-        public SpecificActionImplementationBuilder<T> ForAction(
-            Expression<Action<T>> method)
+        public SpecificActionImplementationBuilder<T> ForAction(Expression<Action<T>> method)
         {
             return new SpecificActionImplementationBuilder<T>(this, method);
         }
@@ -41,10 +48,19 @@ namespace RollerCaster.Reflection
         /// <typeparam name="TResult">Type of the method result.</typeparam>
         /// <returns>Method implementation builder.</returns>
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures", Justification = "This is part of a fluent-like API and strong typing is essential.")]
-        public SpecificFuncImplementationBuilder<T, TResult> ForFunction<TResult>(
-            Expression<Func<T, TResult>> method)
+        public SpecificFuncImplementationBuilder<T, TResult> ForFunction<TResult>(Expression<Func<T, TResult>> method)
         {
             return new SpecificFuncImplementationBuilder<T, TResult>(this, method);
+        }
+
+        /// <summary>Points a property's getter to implement.</summary>
+        /// <param name="method">Property to implement.</param>
+        /// <typeparam name="TResult">Type of the property.</typeparam>
+        /// <returns>Property implementation builder.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures", Justification = "This is part of a fluent-like API and strong typing is essential.")]
+        public SpecificPropertyImplementationBuilder<T, TResult> ForProperty<TResult>(Expression<Func<T, TResult>> method)
+        {
+            return new SpecificPropertyImplementationBuilder<T, TResult>(this, method);
         }
     }
 }

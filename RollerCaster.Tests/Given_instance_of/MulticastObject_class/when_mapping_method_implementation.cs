@@ -43,7 +43,7 @@ namespace Given_instance_of.MulticastObject_class
         {
             get
             {
-                yield return CreateTestCase(0, "Func", "Invalid");
+                yield return CreateTestCase(0, "Func", "InvalidMethod");
             }
         }
 
@@ -54,9 +54,9 @@ namespace Given_instance_of.MulticastObject_class
             Expression<Action<IMethodCarrier>> methodToImplement,
             Expression<Action<IMethodCarrier>> implementationMethod)
         {
-            new MethodImplementationBuilder<IMethodCarrier>(new Dictionary<MethodInfo, MethodInfo>())
+            new MethodImplementationBuilder<IMethodCarrier>(new Dictionary<MethodInfo, MethodInfo>(), new Dictionary<PropertyInfo, MethodInfo>())
                 .ForAction(methodToImplement).ImplementedBy(implementationMethod)
-                .ImplementationDelegates.Should().HaveCount(1)
+                .MethodImplementationDelegates.Should().HaveCount(1)
                 .And.ContainKey(((MethodCallExpression)methodToImplement.Body).Method)
                 .WhichValue.As<object>().Should().Be(((MethodCallExpression)implementationMethod.Body).Method);
         }
@@ -68,9 +68,9 @@ namespace Given_instance_of.MulticastObject_class
             Expression<Func<IMethodCarrier, bool>> methodToImplement,
             Expression<Func<IMethodCarrier, bool>> implementationMethod)
         {
-            new MethodImplementationBuilder<IMethodCarrier>(new Dictionary<MethodInfo, MethodInfo>())
+            new MethodImplementationBuilder<IMethodCarrier>(new Dictionary<MethodInfo, MethodInfo>(), new Dictionary<PropertyInfo, MethodInfo>())
                 .ForFunction(methodToImplement).ImplementedBy(implementationMethod)
-                .ImplementationDelegates.Should().HaveCount(1)
+                .MethodImplementationDelegates.Should().HaveCount(1)
                 .And.ContainKey(((MethodCallExpression)methodToImplement.Body).Method)
                 .WhichValue.As<object>().Should().Be(((MethodCallExpression)implementationMethod.Body).Method);
         }
@@ -82,7 +82,7 @@ namespace Given_instance_of.MulticastObject_class
             Expression<Func<IMethodCarrier, bool>> methodToImplement,
             Expression<Func<IMethodCarrier, bool>> implementationMethod)
         {
-            new MethodImplementationBuilder<IMethodCarrier>(new Dictionary<MethodInfo, MethodInfo>())
+            new MethodImplementationBuilder<IMethodCarrier>(new Dictionary<MethodInfo, MethodInfo>(), new Dictionary<PropertyInfo, MethodInfo>())
                 .Invoking(_ => _.ForFunction(methodToImplement).ImplementedBy(implementationMethod))
                 .ShouldThrow<InvalidOperationException>();
         }

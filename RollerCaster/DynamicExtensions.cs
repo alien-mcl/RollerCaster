@@ -23,10 +23,10 @@ namespace RollerCaster
         private static readonly AssemblyBuilder AssemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName, AssemblyBuilderAccess.Run);
 #endif
         private static readonly ModuleBuilder ModuleBuilder = AssemblyBuilder.DefineDynamicModule(AssemblyNameString + "dll");
-        private static readonly MethodInfo EqualsMethodInfo = typeof(object).GetMethod(nameof(Object.Equals), BindingFlags.Static | BindingFlags.Public);
+        private static readonly MethodInfo EqualsMethodInfo = typeof(object).GetMethod(nameof(Equals), BindingFlags.Static | BindingFlags.Public);
         private static readonly MethodInfo GetPropertyMethodInfo;
         private static readonly MethodInfo SetPropertyMethodInfo;
-        private static readonly string[] AlreadyImplementedMethods = { nameof(Object.Equals), nameof(Object.GetHashCode) };
+        private static readonly string[] AlreadyImplementedMethods = { nameof(Equals), nameof(GetHashCode) };
 
         private static readonly PropertyInfo TypeInstancesPropertyInfo = typeof(MulticastObject)
             .GetProperty(nameof(MulticastObject.TypeInstances), BindingFlags.Instance | BindingFlags.NonPublic);
@@ -317,8 +317,8 @@ namespace RollerCaster
 
         private static void ImplementMethods(this TypeBuilder typeBuilder, IList<Type> types, ICollection<PropertyInfo> propertiesWithBaseImplementation)
         {
-            typeBuilder.CreateMethodOverrideImplementation(typeof(object).GetMethod(nameof(Object.Equals), BindingFlags.Instance | BindingFlags.Public));
-            typeBuilder.CreateMethodOverrideImplementation(typeof(object).GetMethod(nameof(Object.GetHashCode), BindingFlags.Instance | BindingFlags.Public));
+            typeBuilder.CreateMethodOverrideImplementation(typeof(object).GetMethod(nameof(Equals), BindingFlags.Instance | BindingFlags.Public));
+            typeBuilder.CreateMethodOverrideImplementation(typeof(object).GetMethod(nameof(GetHashCode), BindingFlags.Instance | BindingFlags.Public));
             if (types[0].IsInterface)
             {
                 typeBuilder.CreateMethodOverrideImplementation(typeof(DynamicObject).GetMethod(nameof(DynamicObject.TryGetMember), BindingFlags.Instance | BindingFlags.Public));
@@ -360,7 +360,13 @@ namespace RollerCaster
             typeBuilder.CreateProperty(typeof(IProxy).GetProperty(nameof(IProxy.CurrentCastedType)), wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, currentCastedTypeFieldBuilder);
             foreach (var property in properties)
             {
-                typeBuilder.CreateProperty(property, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, null);
+                MethodInfo implementationMethod;
+                if (!MulticastObject.PropertyImplementations.TryGetValue(property, out implementationMethod))
+                {
+                    implementationMethod = null;
+                }
+
+                typeBuilder.CreateProperty(property, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, null, implementationMethod);
             }
         }
 
@@ -459,14 +465,42 @@ namespace RollerCaster
             PropertyInfo property,
             FieldBuilder wrappedObjectFieldBuilder,
             FieldBuilder currentCastedTypeFieldBuilder,
-            FieldBuilder specialFieldBuilder)
+            FieldBuilder specialFieldBuilder,
+            MethodInfo methodToCall = null)
         {
             PropertyBuilder propertyBuilder = typeBuilder.DefineProperty(property.Name, PropertyAttributes.HasDefault, property.PropertyType, null);
-            typeBuilder.CreatePropertyGetter(property, propertyBuilder, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, specialFieldBuilder);
-            if (property.CanWrite && (property.GetSetMethod().IsAbstract || property.GetSetMethod().IsVirtual))
+            if (methodToCall != null)
             {
-                typeBuilder.CreatePropertySetter(property, propertyBuilder, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder);
+                typeBuilder.CreateCustomPropertyGetter(property, propertyBuilder, methodToCall);
             }
+            else
+            {
+                typeBuilder.CreatePropertyGetter(property, propertyBuilder, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, specialFieldBuilder);
+                if (property.CanWrite && (property.GetSetMethod().IsAbstract || property.GetSetMethod().IsVirtual))
+                {
+                    typeBuilder.CreatePropertySetter(property, propertyBuilder, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder);
+                }
+            }
+        }
+
+        private static void CreateCustomPropertyGetter(
+            this TypeBuilder typeBuilder,
+            PropertyInfo property,
+            PropertyBuilder propertyBuilder,
+            MethodInfo implementationMethod)
+        {
+            MethodBuilder getterBuilder = typeBuilder.DefineMethod(
+                "get_" + property.Name,
+                MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.FamANDAssem | MethodAttributes.Family,
+                property.PropertyType,
+                Type.EmptyTypes);
+            var getIl = getterBuilder.GetILGenerator();
+            getIl.Emit(OpCodes.Nop);
+            getIl.Emit(OpCodes.Ldarg_0);
+            getIl.Emit(OpCodes.Call, implementationMethod);
+            getIl.Emit(OpCodes.Ret);
+            propertyBuilder.SetGetMethod(getterBuilder);
+            typeBuilder.DefineMethodOverride(getterBuilder, property.GetMethod);
         }
 
         private static void CreatePropertyGetter(

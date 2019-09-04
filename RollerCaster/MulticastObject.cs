@@ -38,6 +38,9 @@ namespace RollerCaster
         internal static IDictionary<MethodInfo, MethodInfo> MethodImplementations { get; }
             = new ConcurrentDictionary<MethodInfo, MethodInfo>();
 
+        internal static IDictionary<PropertyInfo, MethodInfo> PropertyImplementations { get; }
+            = new ConcurrentDictionary<PropertyInfo, MethodInfo>();
+
         internal Dictionary<Type, Dictionary<Type, Dictionary<PropertyInfo, object>>> Properties { get; }
 
         internal HashSet<Type> Types { get; }
@@ -52,9 +55,11 @@ namespace RollerCaster
         /// <returns>Method implementation builder.</returns>
         public static MethodImplementationBuilder<T> ImplementationOf<T>()
         {
-            var map = new ObservableDictionary<MethodInfo, MethodInfo>();
-            map.CollectionChanged += OnMethodImplementationAdded;
-            return new MethodImplementationBuilder<T>(map);
+            var methodsMap = new ObservableDictionary<MethodInfo, MethodInfo>();
+            methodsMap.CollectionChanged += OnMethodImplementationAdded;
+            var propertiesMap = new ObservableDictionary<PropertyInfo, MethodInfo>();
+            propertiesMap.CollectionChanged += OnPropertyImplementationAdded;
+            return new MethodImplementationBuilder<T>(methodsMap, propertiesMap);
         }
 
         /// <summary>Gets the property value.</summary>
@@ -243,6 +248,20 @@ namespace RollerCaster
                     if (!MethodImplementations.ContainsKey(entry.Key))
                     {
                         MethodImplementations.Add(entry.Key, entry.Value);
+                    }
+                }
+            }
+        }
+        
+        private static void OnPropertyImplementationAdded(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (e.Action == NotifyCollectionChangedAction.Add)
+            {
+                foreach (KeyValuePair<PropertyInfo, MethodInfo> entry in e.NewItems)
+                {
+                    if (!PropertyImplementations.ContainsKey(entry.Key))
+                    {
+                        PropertyImplementations.Add(entry.Key, entry.Value);
                     }
                 }
             }

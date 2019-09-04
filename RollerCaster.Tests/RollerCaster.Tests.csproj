@@ -57,6 +57,7 @@
     <Compile Include="Collections\SpecializedCollection.cs" />
     <Compile Include="Collections\ReadOnlyCollection.cs" />
     <Compile Include="Data\IInterfaceWithMethod.cs" />
+    <Compile Include="Data\ISomeInterface.cs" />
     <Compile Include="Data\IMethodCarrier.cs" />
     <Compile Include="Data\ITestResource.cs" />
     <Compile Include="Data\MethodCarrierImplementation.cs" />
@@ -83,7 +84,9 @@
     <Compile Include="Given_instance_of\MulticastObject_class\when_deep_cloning.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_getting_a_property\which_is_a_reference_type\by_name.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_getting_a_property\which_is_a_reference_type\by_property.cs" />
+    <Compile Include="Given_instance_of\MulticastObject_class\when_invoking_a_custom_implementation.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_invoking_a_method.cs" />
+    <Compile Include="Given_instance_of\MulticastObject_class\when_mapping_property_implementation.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_mapping_method_implementation.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_setting_a_property\which_is_a_reference_type\by_property.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_setting_a_property\which_is_a_read_only_collection.cs" />

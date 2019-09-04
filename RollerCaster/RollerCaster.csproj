@@ -62,6 +62,7 @@
     <Compile Include="Reflection\PropertyExtensions.cs" />
     <Compile Include="Reflection\PropertyInfoEqualityComparer.cs" />
     <Compile Include="Reflection\SpecificActionImplementationBuilder.cs" />
+    <Compile Include="Reflection\SpecificPropertyImplementationBuilder.cs" />
     <Compile Include="Reflection\SpecificFuncImplementationBuilder.cs" />
     <Compile Include="Reflection\SpecificMethodImplementationBuilder.cs" />
     <Compile Include="Reflection\TypeExtensions.cs" />

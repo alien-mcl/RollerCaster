@@ -11,9 +11,7 @@ namespace RollerCaster.Reflection
     {
         private readonly MethodImplementationBuilder<T> _owner;
 
-        internal SpecificFuncImplementationBuilder(
-            MethodImplementationBuilder<T> owner,
-            Expression<Func<T, TResult>> methodToImplement)
+        internal SpecificFuncImplementationBuilder(MethodImplementationBuilder<T> owner, Expression<Func<T, TResult>> methodToImplement)
             : base(owner, methodToImplement)
         {
             _owner = owner;
@@ -28,8 +26,7 @@ namespace RollerCaster.Reflection
         {
             if (implementationMethod != null)
             {
-                var method = ((MethodCallExpression)implementationMethod.Body).Method;
-                ValidateMethodsAndAdd(MethodToImplement, method);
+                ValidateMethodsAndAdd(((MethodCallExpression)implementationMethod.Body).Method);
             }
 
             return _owner;
