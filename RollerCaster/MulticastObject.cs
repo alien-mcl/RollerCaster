@@ -238,50 +238,12 @@ namespace RollerCaster
         {
             return new MulticastObject();
         }
-        
-        private static void OnMethodImplementationAdded(object sender, NotifyCollectionChangedEventArgs e)
-        {
-            if (e.Action == NotifyCollectionChangedAction.Add)
-            {
-                foreach (KeyValuePair<MethodInfo, MethodInfo> entry in e.NewItems)
-                {
-                    if (!MethodImplementations.ContainsKey(entry.Key))
-                    {
-                        MethodImplementations.Add(entry.Key, entry.Value);
-                    }
-                }
-            }
-        }
-        
-        private static void OnPropertyImplementationAdded(object sender, NotifyCollectionChangedEventArgs e)
-        {
-            if (e.Action == NotifyCollectionChangedAction.Add)
-            {
-                foreach (KeyValuePair<PropertyInfo, MethodInfo> entry in e.NewItems)
-                {
-                    if (!PropertyImplementations.ContainsKey(entry.Key))
-                    {
-                        PropertyImplementations.Add(entry.Key, entry.Value);
-                    }
-                }
-            }
-        }
-
-        private static Dictionary<Type, Dictionary<PropertyInfo, object>> CreateNewTypePropertyBag()
-        {
-            return new Dictionary<Type, Dictionary<PropertyInfo, object>>();
-        }
-
-        private static Dictionary<PropertyInfo, object> CreateNewPropertyBag()
-        {
-            return new Dictionary<PropertyInfo, object>();
-        }
 
         /// <summary>Sets the property value.</summary>
         /// <param name="propertyInfo">Property to set value of.</param>
         /// <param name="value">The value to be set.</param>
         /// <param name="instance">Optional strongly typed instance to set property on to ensure wired properties.</param>
-        private void SetProperty(PropertyInfo propertyInfo, object value, object instance)
+        protected virtual void SetProperty(PropertyInfo propertyInfo, object value, object instance)
         {
             if (propertyInfo == null)
             {
@@ -326,6 +288,44 @@ namespace RollerCaster
                     typeProperties[propertyInfo] = value;
                 }
             }
+        }
+        
+        private static void OnMethodImplementationAdded(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (e.Action == NotifyCollectionChangedAction.Add)
+            {
+                foreach (KeyValuePair<MethodInfo, MethodInfo> entry in e.NewItems)
+                {
+                    if (!MethodImplementations.ContainsKey(entry.Key))
+                    {
+                        MethodImplementations.Add(entry.Key, entry.Value);
+                    }
+                }
+            }
+        }
+        
+        private static void OnPropertyImplementationAdded(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (e.Action == NotifyCollectionChangedAction.Add)
+            {
+                foreach (KeyValuePair<PropertyInfo, MethodInfo> entry in e.NewItems)
+                {
+                    if (!PropertyImplementations.ContainsKey(entry.Key))
+                    {
+                        PropertyImplementations.Add(entry.Key, entry.Value);
+                    }
+                }
+            }
+        }
+
+        private static Dictionary<Type, Dictionary<PropertyInfo, object>> CreateNewTypePropertyBag()
+        {
+            return new Dictionary<Type, Dictionary<PropertyInfo, object>>();
+        }
+
+        private static Dictionary<PropertyInfo, object> CreateNewPropertyBag()
+        {
+            return new Dictionary<PropertyInfo, object>();
         }
 
         private object GetPhysicalProperty(string propertyName)
