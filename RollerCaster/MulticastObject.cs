@@ -233,7 +233,7 @@ namespace RollerCaster
         /// <param name="propertyInfo">Property to set value of.</param>
         /// <param name="value">The value to be set.</param>
         /// <param name="instance">Optional strongly typed instance to set property on to ensure wired properties.</param>
-        private void SetProperty(PropertyInfo propertyInfo, object value, object instance)
+        protected virtual void SetProperty(PropertyInfo propertyInfo, object value, object instance)
         {
             if (propertyInfo == null)
             {
