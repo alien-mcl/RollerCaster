@@ -133,6 +133,19 @@ namespace RollerCaster
             }
         }
 
+        private static bool Equals(PropertyInfo left, PropertyInfo right)
+        {
+            if (!left.GetType().Name.StartsWith("Runtime", StringComparison.Ordinal)
+                || !right.GetType().Name.StartsWith("Runtime", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            return left.PropertyType == right.PropertyType
+                && left.Name == right.Name
+                && right.DeclaringType.IsAssignableFrom(left.DeclaringType);
+        }
+
         private bool MoveNextInternal()
         {
             while (_stack.Peek().Item2.MoveNext())
@@ -141,9 +154,7 @@ namespace RollerCaster
                 {
                     PropertyInfo property;
                     if ((property = ((DictionaryEntry)_stack.Peek().Item2.Current).Key as PropertyInfo) != null
-                        && !_visitedProperties.Any(_ => _.PropertyType == property.PropertyType
-                            && _.Name == property.Name
-                            && property.DeclaringType.IsAssignableFrom(_.DeclaringType))
+                        && !_visitedProperties.Any(_ => Equals(_, property))
                         && !property.Name.StartsWith(HiddenPropertyInfo.HiddenPropertyNameIndicator, StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
