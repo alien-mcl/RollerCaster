@@ -30,6 +30,7 @@ namespace RollerCaster
             foreach (var type in multicastObject.Types)
             {
                 types.Add(type);
+                type.EnsureDetailsOf();
                 foreach (var property in DynamicExtensions.TypeProperties[type])
                 {
                     multicastObject.GetProperty(property);

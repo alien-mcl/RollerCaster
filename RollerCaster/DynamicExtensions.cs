@@ -186,7 +186,7 @@ namespace RollerCaster
             return type.Namespace.Replace(".", "_") + "_" + type.Name;
         }
 
-        internal static List<Type> EnsureDetailsOf(this MulticastObject instance, Type type)
+        internal static List<Type> EnsureDetailsOf(this Type type)
         {
             List<Type> types;
             if (!TypeHierarchy.TryGetValue(type, out types))
@@ -210,6 +210,12 @@ namespace RollerCaster
                 }
             }
 
+            return types;
+        }
+
+        internal static List<Type> EnsureDetailsOf(this MulticastObject instance, Type type)
+        {
+            var types = type.EnsureDetailsOf();
             if (!instance.Types.Contains(type))
             {
                 foreach (var actualType in types)
