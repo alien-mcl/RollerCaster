@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using FluentAssertions;
 using NUnit.Framework;
 using RollerCaster;
@@ -16,13 +15,14 @@ namespace Given_instance_of.MulticastObject_class
     {
         private static readonly IEnumerable<MulticastPropertyValue> ExpectedProperties = new[]
         {
-            new MulticastPropertyValue(typeof(IProduct), typeof(IProduct).GetTypeInfo().GetProperty("Name"), "Name"),
-            new MulticastPropertyValue(typeof(IProduct), typeof(IProduct).GetTypeInfo().GetProperty("Ordinal"), 1),
-            new MulticastPropertyValue(typeof(IProduct), typeof(IProduct).GetTypeInfo().GetProperty("Price"), 3.14159d),
-            new MulticastPropertyValue(typeof(IProduct), typeof(IProduct).GetTypeInfo().GetProperty("CreatedOn"), default(DateTime)),
-            new MulticastPropertyValue(typeof(IProduct), typeof(IProduct).GetTypeInfo().GetProperty("Categories"), new ObservableList<string>()),
-            new MulticastPropertyValue(typeof(IProduct), typeof(IProduct).GetTypeInfo().GetProperty("Properties"), new ConcurrentDictionary<string, string>()),
-            new MulticastPropertyValue(typeof(IThing), typeof(IThing).GetTypeInfo().GetProperty("Description"), "Description")
+            new MulticastPropertyValue(typeof(IProduct), typeof(IProduct).GetProperty("Name"), "Name"),
+            new MulticastPropertyValue(typeof(IProduct), typeof(IProduct).GetProperty("Ordinal"), 1),
+            new MulticastPropertyValue(typeof(IProduct), typeof(IProduct).GetProperty("Price"), 3.14159d),
+            new MulticastPropertyValue(typeof(IProduct), typeof(IProduct).GetProperty("CreatedOn"), default(DateTime)),
+            new MulticastPropertyValue(typeof(IProduct), typeof(IProduct).GetProperty("Categories"), new ObservableList<string>()),
+            new MulticastPropertyValue(typeof(IProduct), typeof(IProduct).GetProperty("Properties"), new ConcurrentDictionary<string, string>()),
+            new MulticastPropertyValue(typeof(IProduct), typeof(IProduct).GetProperty("Keywords"), new ReadOnlySpecializedCollection(Array.Empty<string>())),
+            new MulticastPropertyValue(typeof(IThing), typeof(IThing).GetProperty("Description"), "Description")
         };
 
         private IEnumerable<MulticastPropertyValue> Result { get; set; }

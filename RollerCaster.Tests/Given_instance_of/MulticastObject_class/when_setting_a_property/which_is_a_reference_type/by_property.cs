@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using FluentAssertions;
+﻿using FluentAssertions;
 using NUnit.Framework;
 using RollerCaster;
 using RollerCaster.Data;
@@ -15,7 +14,7 @@ namespace Given_instance_of.MulticastObject_class.when_setting_a_property.which_
 
         public override void TheTest()
         {
-            MulticastObject.SetProperty(typeof(IProduct).GetTypeInfo().GetProperty(ExpectedPropertyName), ExpectedValue);
+            MulticastObject.SetProperty(typeof(IProduct).GetProperty(ExpectedPropertyName), ExpectedValue);
         }
 
         [Test]

@@ -54,6 +54,7 @@
     <Compile Include="AssertionsExtensions.cs" />
     <Compile Include="Collections\DictionaryExtensions.cs" />
     <Compile Include="Collections\CollectionExtensions.cs" />
+    <Compile Include="Collections\ReadOnlySpecializedCollection.cs" />
     <Compile Include="Data\SomeEntity.cs" />
     <Compile Include="Data\SomeSpecializedEntity.cs" />
     <Compile Include="Data\SomeSuperDuperSpecializedEntity.cs" />

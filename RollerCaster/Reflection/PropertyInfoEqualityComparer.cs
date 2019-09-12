@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
@@ -19,8 +18,8 @@ namespace RollerCaster.Reflection
         /// <inheritdoc />
         public bool Equals(PropertyInfo x, PropertyInfo y)
         {
-            return (Object.ReferenceEquals(x, null) && Object.ReferenceEquals(y, null))
-                   || (!Object.ReferenceEquals(x, null) && !Object.ReferenceEquals(y, null) && (x == y || EqualsInternal(x, y)));
+            return (ReferenceEquals(x, null) && ReferenceEquals(y, null))
+                   || (!ReferenceEquals(x, null) && !ReferenceEquals(y, null) && (x == y || EqualsInternal(x, y)));
         }
 
         /// <inheritdoc />

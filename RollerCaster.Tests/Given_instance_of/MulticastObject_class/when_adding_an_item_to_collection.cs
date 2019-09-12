@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using FluentAssertions;
+﻿using FluentAssertions;
 using NUnit.Framework;
 using RollerCaster;
 using RollerCaster.Data;
@@ -13,7 +12,7 @@ namespace Given_instance_of.MulticastObject_class
 
         public override void TheTest()
         {
-            MulticastObject.SetProperty(typeof(IProduct).GetTypeInfo().GetProperty(ExpectedProperty), "test");
+            MulticastObject.SetProperty(typeof(IProduct).GetProperty(ExpectedProperty), "test");
         }
 
         [Test]
@@ -24,7 +23,7 @@ namespace Given_instance_of.MulticastObject_class
 
         protected override void ScenarioSetup()
         {
-            MulticastObject.SetProperty(typeof(IProduct).GetTypeInfo().GetProperty(ExpectedProperty), new[] { "first" });
+            MulticastObject.SetProperty(typeof(IProduct).GetProperty(ExpectedProperty), new[] { "first" });
         }
     }
 }

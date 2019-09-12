@@ -29,45 +29,60 @@ namespace RollerCaster.Reflection
         private static readonly Type StringType = typeof(string);
         private static readonly Type ArrayOfBytesType = typeof(byte[]);
 
+        private static readonly IDictionary<CollectionOptions, Type> ListConstructors = new Dictionary<CollectionOptions, Type>()
+        {
+            { CollectionOptions.None, typeof(List<>) },
+            { CollectionOptions.Observable, typeof(ObservableList<>) },
+            { CollectionOptions.Concurrent, typeof(ObservableList<>) },
+            { CollectionOptions.Observable | CollectionOptions.Concurrent, typeof(ObservableList<>) }
+        };
+
+        private static readonly IDictionary<CollectionOptions, Type> SetConstructors = new Dictionary<CollectionOptions, Type>()
+        {
+            { CollectionOptions.None, typeof(HashSet<>) },
+            { CollectionOptions.Observable, typeof(HashSet<>) },
+            { CollectionOptions.Concurrent, typeof(HashSet<>) },
+            { CollectionOptions.Observable | CollectionOptions.Concurrent, typeof(HashSet<>) }
+        };
+
+        private static readonly IDictionary<CollectionOptions, Type> DictionaryConstructors = new Dictionary<CollectionOptions, Type>()
+        {
+            { CollectionOptions.None, typeof(Dictionary<,>) },
+            { CollectionOptions.Observable, typeof(Dictionary<,>) },
+            { CollectionOptions.Concurrent, typeof(ConcurrentDictionary<,>) },
+            { CollectionOptions.Observable | CollectionOptions.Concurrent, typeof(ConcurrentDictionary<,>) }
+        };
+
         private static readonly IDictionary<Type, IDictionary<CollectionOptions, Type>> CollectionConstructors =
             new Dictionary<Type, IDictionary<CollectionOptions, Type>>()
             {
-                {
-                    typeof(ISet<>),
-                    new Dictionary<CollectionOptions, Type>()
-                        {
-                            { CollectionOptions.None, typeof(HashSet<>) },
-                            { CollectionOptions.Observable, typeof(HashSet<>) }
-                        }
-                },
-                {
-                    typeof(IList<>),
-                    new Dictionary<CollectionOptions, Type>()
-                        {
-                            { CollectionOptions.None, typeof(List<>) },
-                            { CollectionOptions.Observable, typeof(ObservableList<>) },
-                            { CollectionOptions.Concurrent, typeof(ObservableList<>) },
-                            { CollectionOptions.Observable | CollectionOptions.Concurrent, typeof(ObservableList<>) }
-                        }
-                },
-                {
-                    typeof(IDictionary),
-                    new Dictionary<CollectionOptions, Type>()
-                        {
-                            { CollectionOptions.None, typeof(Hashtable) },
-                            { CollectionOptions.Observable, typeof(Hashtable) }
-                        }
-                },
-                {
-                    typeof(IDictionary<,>),
-                    new Dictionary<CollectionOptions, Type>()
-                        {
-                            { CollectionOptions.None, typeof(Dictionary<,>) },
-                            { CollectionOptions.Concurrent, typeof(ConcurrentDictionary<,>) },
-                            { CollectionOptions.Observable, typeof(ConcurrentDictionary<,>) }
-                        }
-                }
+                { typeof(IEnumerable<>), ListConstructors },
+                { typeof(ICollection<>), ListConstructors },
+                { typeof(IList<>), ListConstructors },
+                { typeof(ISet<>), SetConstructors },
+                { typeof(IDictionary<,>), DictionaryConstructors },
+                { typeof(IEnumerable), ListConstructors },
+                { typeof(ICollection), ListConstructors },
+                { typeof(IList), ListConstructors },
+                { typeof(IDictionary), DictionaryConstructors }
             };
+
+        private static readonly Type[] GenericCollections =
+        {
+            typeof(IEnumerable<>),
+            typeof(ICollection<>),
+            typeof(IList<>),
+            typeof(IDictionary<,>),
+            typeof(ISet<>)
+        };
+
+        private static readonly Type[] NonGenericCollections =
+        {
+            typeof(IEnumerable),
+            typeof(ICollection),
+            typeof(IList),
+            typeof(IDictionary)
+        };
 
         /// <summary>Determines whether the given <paramref name="type" /> is an enumerable type.</summary>
         /// <param name="type">The type to be checked.</param>
@@ -97,10 +112,9 @@ namespace RollerCaster.Reflection
                 return false;
             }
 
-            var typeInfo = type.GetTypeInfo();
             return (typeof(IList).IsAssignableFrom(type)) || (typeof(IList<>).IsAssignableFrom(type)) || 
-                ((typeInfo.IsGenericType) && typeof(IList<>).IsAssignableFrom(type.GetGenericTypeDefinition())) ||
-                (type.GetInterfaces().Any(@interface => @interface.GetTypeInfo().IsGenericType && @interface.GetGenericTypeDefinition() == typeof(IList<>)));
+                ((type.IsGenericType) && typeof(IList<>).IsAssignableFrom(type.GetGenericTypeDefinition())) ||
+                (type.GetInterfaces().Any(@interface => @interface.IsGenericType && @interface.GetGenericTypeDefinition() == typeof(IList<>)));
         }
 
         /// <summary>Determines whether the given <paramref name="type" /> is a set.</summary>
@@ -113,14 +127,14 @@ namespace RollerCaster.Reflection
                 throw new ArgumentNullException(nameof(type));
             }
 
-            if (!type.GetTypeInfo().IsGenericType)
+            if (!type.IsGenericType)
             {
                 return false;
             }
             
             var genericType = type.GetGenericTypeDefinition();
             return (type == typeof(ISet<>)) || (typeof(ISet<>).IsAssignableFrom(type)) || (typeof(ISet<>).IsAssignableFrom(genericType)) ||
-                (genericType.GetInterfaces().Any(@interface => @interface.GetTypeInfo().IsGenericType && @interface.GetGenericTypeDefinition() == typeof(ISet<>)));
+                (genericType.GetInterfaces().Any(@interface => @interface.IsGenericType && @interface.GetGenericTypeDefinition() == typeof(ISet<>)));
         }
 
         /// <summary>Determines whether the given <paramref name="type" /> is a dictionary.</summary>
@@ -138,8 +152,7 @@ namespace RollerCaster.Reflection
                 return true;
             }
 
-            var typeInfo = type.GetTypeInfo();
-            if (!typeInfo.IsGenericType)
+            if (!type.IsGenericType)
             {
                 return false;
             }
@@ -164,29 +177,50 @@ namespace RollerCaster.Reflection
                 return null;
             }
 
-            var valueTypeInfo = valueType.GetTypeInfo();
             if (!valueType.IsAnEnumerable())
             {
-                return (valueTypeInfo.IsValueType ? Activator.CreateInstance(valueType) : null);
+                return valueType.CreateDefaultLiteral();
             }
 
-            Type collectionType;
-            if (valueType.IsADictionary())
+            if (valueType.IsArray)
             {
-                collectionType = (!valueTypeInfo.IsGenericType
-                    ? CollectionConstructors[typeof(IDictionary)][options]
-                    : CollectionConstructors[typeof(IDictionary<,>)][options].MakeGenericType(valueType.GetGenericArguments()));
+                return Array.CreateInstance(valueType.GetElementType(), 0);
             }
-            else if (valueType.IsASet())
+
+            object[] parameters = null;
+            ConstructorInfo ctor;
+            IDictionary<CollectionOptions, Type> ctors;
+            var collectionType = valueType.GetBaseCollectionType();
+            if (collectionType != null && CollectionConstructors.TryGetValue(collectionType, out ctors))
             {
-                collectionType = CollectionConstructors[typeof(ISet<>)][options].MakeGenericType(valueType.GetItemType());
+                var type = ctors[options];
+                ctor = (collectionType.IsGenericType
+                        ? type.MakeGenericType(valueType.GetGenericArguments())
+                        : type.MakeGenericType(Enumerable.Range(0, type.GenericTypeArguments.Length).Select(_ => typeof(object)).ToArray()))
+                    .GetConstructor(Type.EmptyTypes);
             }
             else
             {
-                collectionType = CollectionConstructors[typeof(IList<>)][options].MakeGenericType(valueType.GetItemType());
+                ctor = (
+                    from method in valueType.GetConstructors()
+                    where method.GetParameters().Length == 1 && method.GetParameters()[0].ParameterType.IsAnEnumerable()
+                    select method).FirstOrDefault();
+                if (ctor != null)
+                {
+                    parameters = new[]
+                    {
+                        !valueType.IsAssignableFrom(ctor.GetParameters()[0].ParameterType)
+                            ? ctor.GetParameters()[0].ParameterType.GetDefaultValue(CollectionOptions.None)
+                            : valueType.CreateDefaultLiteral()
+                    };
+                }
+                else
+                {
+                    ctor = valueType.GetConstructor(Type.EmptyTypes);
+                }
             }
 
-            return collectionType.GetConstructor(Type.EmptyTypes).Invoke(null);
+            return ctor.Invoke(parameters);
         }
 
         /// <summary>Gets a type of an item in the collection.</summary>
@@ -205,13 +239,12 @@ namespace RollerCaster.Reflection
                 return type.GetElementType();
             }
 
-            var typeInfo = type.GetTypeInfo();
-            if (!typeInfo.IsGenericType)
+            if (!type.IsGenericType)
             {
                 return type;
             }
 
-            var genericTypeDefinition = typeInfo.GetGenericTypeDefinition();
+            var genericTypeDefinition = type.GetGenericTypeDefinition();
             if (genericTypeDefinition.GetInterfaces().Any(@interface => @interface == typeof(IDictionary<,>)))
             {
                 return typeof(KeyValuePair<,>).MakeGenericType(type.GetGenericArguments());
@@ -264,18 +297,36 @@ namespace RollerCaster.Reflection
 
             return null;
         }
+        
+        internal static Type GetBaseCollectionType(this Type type)
+        {
+            if (type.IsGenericType)
+            {
+                var result = type.GetGenericTypeDefinition();
+                if (GenericCollections.Contains(result))
+                {
+                    return result;
+                }
+            }
+
+            return NonGenericCollections.Contains(type) ? type : null;
+        }
+
+        internal static bool IsReadOnlyEnumerable(this Type valueType)
+        {
+            return valueType.GetAddMethod() == null;
+        }
 
         internal static void AddEnumerationValue(this Type valueType, IEnumerable currentValue, object value)
         {
-            var add = currentValue.GetType().GetMethod("Add") ?? currentValue.GetAddMethod(valueType);
+            var add = valueType.GetAddMethod(currentValue);
             currentValue.Add(add, valueType.IsADictionary(), value);
         }
 
         [SuppressMessage("Microsoft.Globalization", "CA1307:SpecifyStringComparison", Justification = "String is culture invariant.")]
         internal static void CopyEnumeration(this Type valueType, IEnumerable currentValue, IEnumerable value)
         {
-            var currentValueTypeInfo = currentValue.GetType();
-            var add = currentValueTypeInfo.GetMethod("Add") ?? currentValue.GetAddMethod(valueType);
+            var add = valueType.GetAddMethod(currentValue);
             bool isDictionary = valueType.IsADictionary();
             foreach (var item in value)
             {
@@ -284,13 +335,26 @@ namespace RollerCaster.Reflection
         }
 
         [SuppressMessage("Microsoft.Globalization", "CA1307:SpecifyStringComparison", Justification = "String is culture invariant.")]
-        private static MethodInfo GetAddMethod(this object collection, Type valueType)
+        private static MethodInfo GetAddMethod(this Type valueType, object collection = null)
         {
-            return (from method in valueType.GetRuntimeMethods()
-                where method.Name == "Add" || method.Name.EndsWith(".Add")
-                from parameter in method.GetParameters()
-                join genericType in collection.GetType().GenericTypeArguments on parameter.ParameterType equals genericType into parameters
-                select method).First();
+            var result = (collection != null ? collection.GetType().GetMethod("Add") : valueType.GetMethod("Add"));
+            if (result == null)
+            {
+                var methods = from method in valueType.GetRuntimeMethods()
+                              where method.Name == "Add" || method.Name.EndsWith(".Add")
+                              select method;
+                if (collection != null)
+                {
+                    methods = from method in methods
+                              from parameter in method.GetParameters()
+                              join genericType in collection.GetType().GenericTypeArguments on parameter.ParameterType equals genericType into parameters
+                              select method;
+                }
+
+                result = methods.FirstOrDefault();
+            }
+
+            return result;
         }
 
         private static void Add(this IEnumerable currentValue, MethodInfo add, bool isDictionary, object value)
@@ -308,6 +372,11 @@ namespace RollerCaster.Reflection
             }
 
             add.Invoke(currentValue, parameters.ToArray());
+        }
+
+        private static object CreateDefaultLiteral(this Type type)
+        {
+            return type.IsValueType ? Activator.CreateInstance(type) : null;
         }
     }
 }

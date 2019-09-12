@@ -94,7 +94,8 @@ namespace RollerCaster
         {
             foreach (var propertyValue in source.PropertyValues)
             {
-                if (propertyValue.Property.PropertyType.IsAnEnumerable())
+                var collectionType = propertyValue.Property.PropertyType.GetBaseCollectionType();
+                if (collectionType != null)
                 {
                     if (propertyValue.Property.PropertyType.IsADictionary())
                     {
@@ -134,7 +135,7 @@ namespace RollerCaster
 
         private static object CloneValue(this MulticastObject source, Type propertyType, object value, IDictionary<object, object> visitedObjects)
         {
-            if ((propertyType.GetTypeInfo().IsValueType) || (value == null))
+            if ((propertyType.IsValueType) || (value == null))
             {
                 return value;
             }

@@ -171,11 +171,10 @@ namespace RollerCaster
                 return "ArrayOf_" + type.GetElementType().GetName();
             }
 
-            var typeInfo = type.GetTypeInfo();
-            if (typeInfo.IsGenericType)
+            if (type.IsGenericType)
             {
                 return type.Namespace.Replace(".", "_") + "_" + type.Name.Substring(0, type.Name.LastIndexOf('`')) + "Of_" +
-                       String.Join("_And_", typeInfo.GenericTypeArguments.Select(genericType => genericType.GetName()));
+                       String.Join("_And_", type.GenericTypeArguments.Select(genericType => genericType.GetName()));
             }
 
             return type.Namespace.Replace(".", "_") + "_" + type.Name;
@@ -434,7 +433,7 @@ namespace RollerCaster
                 getIl.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
                 getIl.Emit(OpCodes.Ldstr, property.Name);
                 getIl.Emit(OpCodes.Callvirt, GetPropertyMethodInfo);
-                getIl.Emit(property.PropertyType.GetTypeInfo().IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, property.PropertyType);
+                getIl.Emit(property.PropertyType.IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, property.PropertyType);
                 if (property.UseBaseImplementation())
                 {
                     LocalBuilder currentValue = getIl.DeclareLocal(property.PropertyType);
@@ -445,13 +444,13 @@ namespace RollerCaster
                     getIl.Emit(OpCodes.Call, property.GetGetMethod());
                     getIl.Emit(OpCodes.Stloc, resultValue);
                     getIl.Emit(OpCodes.Ldloc, resultValue);
-                    if (property.PropertyType.GetTypeInfo().IsValueType)
+                    if (property.PropertyType.IsValueType)
                     {
                         getIl.Emit(OpCodes.Box, property.PropertyType);
                     }
 
                     getIl.Emit(OpCodes.Ldloc, currentValue);
-                    if (property.PropertyType.GetTypeInfo().IsValueType)
+                    if (property.PropertyType.IsValueType)
                     {
                         getIl.Emit(OpCodes.Box, property.PropertyType);
                     }
@@ -469,7 +468,7 @@ namespace RollerCaster
                     getIl.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
                     getIl.Emit(OpCodes.Ldstr, property.Name);
                     getIl.Emit(OpCodes.Ldloc, resultValue);
-                    if (property.PropertyType.GetTypeInfo().IsValueType)
+                    if (property.PropertyType.IsValueType)
                     {
                         getIl.Emit(OpCodes.Box, property.PropertyType);
                     }
@@ -546,7 +545,7 @@ namespace RollerCaster
                 setIl.Emit(OpCodes.Ldarg_1);
             }
 
-            if (property.PropertyType.GetTypeInfo().IsValueType)
+            if (property.PropertyType.IsValueType)
             {
                 setIl.Emit(OpCodes.Box, property.PropertyType);
             }

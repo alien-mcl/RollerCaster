@@ -70,7 +70,7 @@ namespace RollerCaster
                 return GetEnumerableProperty(valueType, propertyInfo);
             }
 
-            if (!valueType.GetTypeInfo().IsValueType)
+            if (!valueType.IsValueType)
             {
                 valueType = ReferenceType;
             }
@@ -253,13 +253,13 @@ namespace RollerCaster
 
             Types.Add(propertyInfo.DeclaringType);
             var valueType = propertyInfo.PropertyType;
-            if (valueType.IsAnEnumerable())
+            if (valueType.IsAnEnumerable() && !valueType.IsReadOnlyEnumerable())
             {
                 SetEnumerableProperty(valueType, propertyInfo, value);
                 return;
             }
 
-            if (!valueType.GetTypeInfo().IsValueType)
+            if (!valueType.IsValueType)
             {
                 valueType = ReferenceType;
             }
