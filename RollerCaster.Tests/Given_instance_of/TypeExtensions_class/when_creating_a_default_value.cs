@@ -42,9 +42,9 @@ namespace Given_instance_of.TypeExtensions_class
         }
 
         [Test]
-        public void Should_create_a_concurrent_dictionary_when_a_concurrent_dictionary_is_needed()
+        public void Should_create_an_observable_dictionary_when_a_concurrent_dictionary_is_needed()
         {
-            typeof(IDictionary<int, int>).GetDefaultValue(CollectionOptions.Concurrent).Should().BeOfType<ConcurrentDictionary<int, int>>();
+            typeof(IDictionary<int, int>).GetDefaultValue(CollectionOptions.Concurrent).Should().BeOfType<ObservableDictionary<int, int>>();
         }
 
         [Test]
@@ -57,6 +57,12 @@ namespace Given_instance_of.TypeExtensions_class
         public void Should_create_an_array_when_an_array_is_needed()
         {
             typeof(int[]).GetDefaultValue().Should().BeOfType<int[]>();
+        }
+
+        [Test]
+        public void Should_create_a_specialized_collection_when_such_is_needed()
+        {
+            typeof(ReadOnlySpecializedCollection).GetDefaultValue().Should().BeOfType<ReadOnlySpecializedCollection>();
         }
 
         [Test]

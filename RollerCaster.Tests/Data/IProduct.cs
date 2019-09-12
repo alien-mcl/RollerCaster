@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using RollerCaster.Collections;
 
 namespace RollerCaster.Data
 {
@@ -16,5 +17,7 @@ namespace RollerCaster.Data
         ICollection<string> Categories { get; }
 
         IDictionary<string, string> Properties { get; }
+
+        ReadOnlySpecializedCollection Keywords { get; }
     }
 }

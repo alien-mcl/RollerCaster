@@ -61,6 +61,7 @@
     <Compile Include="Data\IMethodCarrier.cs" />
     <Compile Include="Data\ITestResource.cs" />
     <Compile Include="Data\MethodCarrierImplementation.cs" />
+    <Compile Include="Collections\ReadOnlySpecializedCollection.cs" />
     <Compile Include="Data\SomeEntity.cs" />
     <Compile Include="Data\SomeSpecializedEntity.cs" />
     <Compile Include="Data\SomeSuperDuperSpecializedEntity.cs" />

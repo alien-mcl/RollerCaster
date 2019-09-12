@@ -116,7 +116,7 @@ namespace RollerCaster
             {
                 var current = (index == ObjectLevel
                     ? _properties
-                    : (IDictionary)_stack.Peek().Item2.Current.GetType().GetTypeInfo().GetDeclaredProperty("Value").GetValue(_stack.Peek().Item2.Current));
+                    : (IDictionary)_stack.Peek().Item2.Current.GetType().GetProperty("Value").GetValue(_stack.Peek().Item2.Current));
                 if (!ResetInternal(current))
                 {
                     return;

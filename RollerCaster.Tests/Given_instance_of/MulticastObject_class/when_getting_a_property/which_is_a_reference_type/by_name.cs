@@ -37,9 +37,9 @@ namespace Given_instance_of.MulticastObject_class.when_getting_a_property.which_
 
         private MulticastObject MulticastObjectWithDefaultPropertyValueOf<T>(string propertyName)
         {
-            var propertyType = typeof(T).GetTypeInfo().GetDeclaredProperty(propertyName).PropertyType;
+            var propertyType = typeof(T).GetProperty(propertyName).PropertyType;
             var result = new MulticastObject();
-            result.SetProperty(typeof(T).GetProperty(propertyName), propertyType.GetTypeInfo().IsValueType ? Activator.CreateInstance(propertyType) : null);
+            result.SetProperty(typeof(T).GetProperty(propertyName), propertyType.IsValueType ? Activator.CreateInstance(propertyType) : null);
             return result;
         }
     }
