@@ -101,6 +101,8 @@ namespace RollerCaster.Reflection
             typeof(ISet<>)
         };
 
+        private static readonly IDictionary<Type, bool> ReadOnlyCollections = new Dictionary<Type, bool>();
+
         /// <summary>Determines whether the given <paramref name="type" /> is an enumerable type.</summary>
         /// <param name="type">The type to be checked.</param>
         /// <returns><b>true</b> if the <paramref name="type" /> is enumerable, but not neither a string nor an array of bytes; otherwise, <b>false</b>.</returns>
@@ -343,7 +345,16 @@ namespace RollerCaster.Reflection
 
         internal static bool IsReadOnlyEnumerable(this Type valueType)
         {
-            return valueType.GetAddMethod() == null;
+            bool result;
+            lock (ReadOnlyCollections)
+            {
+                if (!ReadOnlyCollections.TryGetValue(valueType, out result))
+                {
+                    ReadOnlyCollections[valueType] = result = valueType.GetAddMethod() == null;
+                }
+            }
+
+            return result;
         }
 
         internal static void AddEnumerationValue(this Type valueType, IEnumerable currentValue, object value)
@@ -369,7 +380,8 @@ namespace RollerCaster.Reflection
             var result = (collection != null ? collection.GetType().GetMethod("Add") : valueType.GetMethod("Add"));
             if (result == null)
             {
-                var methods = from method in valueType.GetRuntimeMethods()
+                var methods = from type in new[] { valueType }.Concat(valueType.GetInterfaces())
+                              from method in type.GetRuntimeMethods()
                               where method.Name == "Add" || method.Name.EndsWith(".Add")
                               select method;
                 if (collection != null)
