@@ -13,28 +13,28 @@ namespace Given_instance_of.MulticastObject_class.when_getting_a_property
         public void Should_throw_when_no_property_info_is_given()
         {
             MulticastObject.Invoking(instance => instance.GetProperty(null))
-                .ShouldThrow<ArgumentNullException>().And.ParamName.Should().Be("propertyInfo");
+                .Should().Throw<ArgumentNullException>().And.ParamName.Should().Be("propertyInfo");
         }
 
         [Test]
         public void Should_throw_when_no_property_name_is_given()
         {
             MulticastObject.Invoking(instance => instance.GetProperty<IProduct, string>(null))
-                .ShouldThrow<ArgumentNullException>().And.ParamName.Should().Be("propertyName");
+                .Should().Throw<ArgumentNullException>().And.ParamName.Should().Be("propertyName");
         }
 
         [Test]
         public void Should_throw_when_empty_property_name_is_given()
         {
             MulticastObject.Invoking(instance => instance.GetProperty<IProduct, string>(String.Empty))
-                .ShouldThrow<ArgumentOutOfRangeException>().And.ParamName.Should().Be("propertyName");
+                .Should().Throw<ArgumentOutOfRangeException>().And.ParamName.Should().Be("propertyName");
         }
 
         [Test]
         public void Should_throw_when_no_multicast_object_is_given()
         {
             ((MulticastObject)null).Invoking(instance => instance.GetProperty<IProduct, string>("Name"))
-                .ShouldThrow<ArgumentNullException>().And.ParamName.Should().Be("multicastObject");
+                .Should().Throw<ArgumentNullException>().And.ParamName.Should().Be("multicastObject");
         }
     }
 }

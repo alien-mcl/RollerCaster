@@ -33,7 +33,7 @@ namespace Given_instance_of.MulticastObject_class
         {
             new MulticastObject().ActLike<IInterfaceWithMethod>()
                 .Invoking(_ => _.Action(new Random((int)DateTime.UtcNow.Ticks).Next()))
-                .ShouldNotThrow();
+                .Should().NotThrow();
         }
         
         [Test]

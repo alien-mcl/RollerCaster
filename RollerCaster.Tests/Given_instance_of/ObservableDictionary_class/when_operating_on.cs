@@ -60,7 +60,7 @@ namespace Given_instance_of.ObservableDictionary_class
         [Test]
         public void Should_provide_sync_root()
         {
-            ((ICollection)Map).Invoking(_ => { var test = _.SyncRoot; }).ShouldThrow<NotSupportedException>();
+            ((ICollection)Map).Invoking(_ => { var test = _.SyncRoot; }).Should().Throw<NotSupportedException>();
         }
 
         [Test]
@@ -102,25 +102,25 @@ namespace Given_instance_of.ObservableDictionary_class
         [Test]
         public void Should_provide_map_keys()
         {
-            Map.Keys.ShouldAllBeEquivalentTo(new[] { "X" });
+            Map.Keys.Should().BeEquivalentTo("X");
         }
 
         [Test]
         public void Should_provide_dictionary_keys()
         {
-            ((IDictionary)Map).Keys.Cast<string>().ShouldAllBeEquivalentTo(new[] { "X" });
+            ((IDictionary)Map).Keys.Cast<string>().Should().BeEquivalentTo("X");
         }
 
         [Test]
         public void Should_provide_map_values()
         {
-            Map.Values.ShouldAllBeEquivalentTo(new[] { "9" });
+            Map.Values.Should().BeEquivalentTo("9");
         }
 
         [Test]
         public void Should_provide_dictionary_values()
         {
-            ((IDictionary)Map).Values.Cast<string>().ShouldAllBeEquivalentTo(new[] { "9" });
+            ((IDictionary)Map).Values.Cast<string>().Should().BeEquivalentTo("9");
         }
 
         [Test]
@@ -138,7 +138,7 @@ namespace Given_instance_of.ObservableDictionary_class
         [Test]
         public void Should_notify_about_changed_entries()
         {
-            ChangedItems.Should().ContainKey("A").WhichValue.ShouldBeEquivalentTo(new Tuple<string, string>("1", "0"));
+            ChangedItems.Should().ContainKey("A").WhichValue.Should().BeEquivalentTo(new Tuple<string, string>("1", "0"));
         }
 
         [Test]
@@ -189,13 +189,13 @@ namespace Given_instance_of.ObservableDictionary_class
         [Test]
         public void Should_copy_entries()
         {
-            BoxedCopy.ShouldAllBeEquivalentTo(new[] { new KeyValuePair<string, string>("X", "9") });
+            BoxedCopy.Should().BeEquivalentTo(new KeyValuePair<string, string>("X", "9"));
         }
 
         [Test]
         public void Should_copy_dictionary()
         {
-            UnboxedCopy.ShouldAllBeEquivalentTo(new[] { new DictionaryEntry("X", "9") });
+            UnboxedCopy.Should().BeEquivalentTo(new DictionaryEntry("X", "9"));
         }
 
         [Test]
@@ -203,7 +203,7 @@ namespace Given_instance_of.ObservableDictionary_class
         {
             foreach (KeyValuePair<string, string> entry in (IEnumerable)Map)
             {
-                entry.ShouldBeEquivalentTo(new KeyValuePair<string, string>("X", "9"));
+                entry.Should().BeEquivalentTo(new KeyValuePair<string, string>("X", "9"));
             }
         }
 

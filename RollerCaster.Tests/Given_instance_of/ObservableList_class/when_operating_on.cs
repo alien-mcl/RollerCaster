@@ -92,13 +92,13 @@ namespace Given_instance_of.ObservableList_class
         [Test]
         public void Should_notify_about_new_item()
         {
-            NewItems.ShouldAllBeEquivalentTo(new[] { "2", "W", "3" });
+            NewItems.Should().BeEquivalentTo("2", "W", "3");
         }
 
         [Test]
         public void Should_notify_about_removed_item()
         {
-            OldItems.ShouldAllBeEquivalentTo(new[] { "2", "W", "3" });
+            OldItems.Should().BeEquivalentTo("2", "W", "3");
         }
 
         [Test]
@@ -110,7 +110,7 @@ namespace Given_instance_of.ObservableList_class
         [Test]
         public void Should_notify_about_cleared_item()
         {
-            ClearedItems.ShouldBeEquivalentTo(new[] { "X" });
+            ClearedItems.Should().BeEquivalentTo("X");
         }
 
         [Test]

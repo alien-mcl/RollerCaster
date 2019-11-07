@@ -56,19 +56,19 @@ namespace Given_instance_of.ObservableSet_class
         [Test]
         public void Should_notify_about_new_item()
         {
-            NewItems.ShouldAllBeEquivalentTo(new[] { "2", "W" });
+            NewItems.Should().BeEquivalentTo("2", "W");
         }
 
         [Test]
         public void Should_notify_about_removed_item()
         {
-            OldItems.ShouldAllBeEquivalentTo(new[] { "2" });
+            OldItems.Should().BeEquivalentTo("2");
         }
 
         [Test]
         public void Should_notify_about_cleared_item()
         {
-            ClearedItems.ShouldBeEquivalentTo(new[] { "1", "W" });
+            ClearedItems.Should().BeEquivalentTo("1", "W");
         }
 
         [Test]

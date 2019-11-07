@@ -52,7 +52,7 @@ namespace Given_instance_of.MulticastObject_class
         {
             new MethodImplementationBuilder<IMethodCarrier>(new Dictionary<MethodInfo, MethodInfo>(), new Dictionary<PropertyInfo, MethodInfo>())
                 .Invoking(_ => _.ForProperty(PropertyToImplement).ImplementedBy(InvalidImplementationMethod))
-                .ShouldThrow<InvalidOperationException>();
+                .Should().Throw<InvalidOperationException>();
         }
 
         [Test]
@@ -60,7 +60,7 @@ namespace Given_instance_of.MulticastObject_class
         {
             new MethodImplementationBuilder<IMethodCarrier>(new Dictionary<MethodInfo, MethodInfo>(), new Dictionary<PropertyInfo, MethodInfo>())
                 .Invoking(_ => _.ForProperty(InvalidPropertyToImplement))
-                .ShouldThrow<InvalidOperationException>();
+                .Should().Throw<InvalidOperationException>();
         }
     }
 }

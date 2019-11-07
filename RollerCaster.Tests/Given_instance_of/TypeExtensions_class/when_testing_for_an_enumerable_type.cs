@@ -13,7 +13,7 @@ namespace Given_instance_of.TypeExtensions_class
         [Test]
         public void Should_throw_when_no_type_is_given()
         {
-            ((Type)null).Invoking(type => type.IsAnEnumerable()).ShouldThrow<ArgumentNullException>();
+            ((Type)null).Invoking(type => type.IsAnEnumerable()).Should().Throw<ArgumentNullException>();
         }
 
         [Test]

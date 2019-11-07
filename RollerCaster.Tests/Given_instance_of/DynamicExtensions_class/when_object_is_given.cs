@@ -15,13 +15,14 @@ namespace Given_instance_of.DynamicExtensions_class
         [Test]
         public void Should_throw_class_has_abstract_methods()
         {
-            new MulticastObject().Invoking(instance => instance.ActLike<TestAbstractClass>()).ShouldThrow<ArgumentOutOfRangeException>();
+            new MulticastObject().Invoking(instance => instance.ActLike<TestAbstractClass>())
+                .Should().Throw<ArgumentOutOfRangeException>();
         }
 
         [Test]
         public void Should_throw_when_that_object_is_neither_a_MulticastObject_nor_IProxy()
         {
-            new Object().Invoking(instance => instance.Unwrap()).ShouldThrow<InvalidOperationException>();
+            new Object().Invoking(instance => instance.Unwrap()).Should().Throw<InvalidOperationException>();
         }
 
         [Test]
@@ -40,7 +41,7 @@ namespace Given_instance_of.DynamicExtensions_class
         [Test]
         public void Should_throw_when_no_casted_type_is_given()
         {
-            new MulticastObject().Invoking(instance => instance.ActLike(null)).ShouldThrow<ArgumentNullException>();
+            new MulticastObject().Invoking(instance => instance.ActLike(null)).Should().Throw<ArgumentNullException>();
         }
 
         [Test]
@@ -59,14 +60,14 @@ namespace Given_instance_of.DynamicExtensions_class
         [Test]
         public void Should_throw_when_unwrapping_other_than_MulticastObject_instance()
         {
-            new Object().Invoking(instance => instance.Unwrap()).ShouldThrow<InvalidOperationException>();
+            new Object().Invoking(instance => instance.Unwrap()).Should().Throw<InvalidOperationException>();
         }
 
         [Test]
         public void Should_throw_when_casting_to_multiple_classes()
         {
             new MulticastObject().ActLike<SpecializedProduct>().Invoking(instance => instance.ActLike(typeof(string)))
-                .ShouldThrow<InvalidOperationException>();
+                .Should().Throw<InvalidOperationException>();
         }
 
         public abstract class TestAbstractClass

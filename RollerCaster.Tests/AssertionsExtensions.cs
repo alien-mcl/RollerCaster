@@ -23,7 +23,8 @@ namespace RollerCaster
             entityTypeProperties.ContainKey(typeof(TValue), "because '{0}' is the type of value of this property.", typeof(TValue));
             var typeProperties = entityTypeProperties.Subject[typeof(TValue)].Should();
             typeProperties.Subject.Keys.Should().Contain(item => item.Name == propertyName, "because '{0}' is supposed to be set.", propertyName);
-            typeProperties.Subject.First(item => item.Key.Name == propertyName).Value.Should().Be(value, "because '{0}' is the value supposed to be set.", value);
+            typeProperties.Subject.First(item => item.Key.Name == propertyName)
+                .Value.Should().Be(value, "because '{0}' is the value supposed to be set.", value);
         }
 
         internal static void HavePropertySet<TEntity>(
@@ -36,7 +37,8 @@ namespace RollerCaster
             entityTypeProperties.ContainKey(typeof(void), ReferenceTypeKeyReason);
             var typeProperties = entityTypeProperties.Subject[typeof(void)].Should();
             typeProperties.Subject.Keys.Should().Contain(item => item.Name == propertyName, "because '{0}' is supposed to be set.", propertyName);
-            typeProperties.Subject.First(item => item.Key.Name == propertyName).Value.Should().Be(value, "because '{0}' is the value supposed to be set.", value);
+            typeProperties.Subject.First(item => item.Key.Name == propertyName)
+                .Value.Should().Be(value, "because '{0}' is the value supposed to be set.", value);
         }
 
         internal static void NotHavePropertySet<TEntity>(
@@ -68,7 +70,8 @@ namespace RollerCaster
             entityTypeProperties.ContainKey(typeof(void), ReferenceTypeKeyReason);
             var typeProperties = entityTypeProperties.Subject[typeof(void)].Should();
             typeProperties.Subject.Keys.Should().Contain(item => item.Name == propertyName, "because '{0}' is supposed to be set.", propertyName);
-            typeProperties.Subject.First(item => item.Key.Name == propertyName).Value.Should().BeAssignableTo<IEnumerable>().Which.Should().Contain(values);
+            typeProperties.Subject.First(item => item.Key.Name == propertyName)
+                .Value.Should().BeAssignableTo<IEnumerable>().Which.Should().Contain(values);
         }
 
         internal static void HaveCollectionPropertySet<TEntity>(
@@ -81,7 +84,8 @@ namespace RollerCaster
             entityTypeProperties.ContainKey(typeof(void), ReferenceTypeKeyReason);
             var typeProperties = entityTypeProperties.Subject[typeof(void)].Should();
             typeProperties.Subject.Keys.Should().Contain(item => item.Name == propertyName, "because '{0}' is supposed to be set.", propertyName);
-            typeProperties.Subject.First(item => item.Key.Name == propertyName).Value.ShouldBeEquivalentTo(value, "because all values should be added when setting a collection.");
+            typeProperties.Subject.First(item => item.Key.Name == propertyName)
+                .Value.Should().BeEquivalentTo(value, "because all values should be added when setting a collection.");
         }
 
         internal static void HaveDictionaryPropertySet<TEntity>(
@@ -94,7 +98,8 @@ namespace RollerCaster
             entityTypeProperties.ContainKey(typeof(void), ReferenceTypeKeyReason);
             var typeProperties = entityTypeProperties.Subject[typeof(void)].Should();
             typeProperties.Subject.Keys.Should().Contain(item => item.Name == propertyName, "because '{0}' is supposed to be set.", propertyName);
-            typeProperties.Subject.First(item => item.Key.Name == propertyName).Value.ShouldBeEquivalentTo(value, "because all values should be added when setting a dictionary.");
+            typeProperties.Subject.First(item => item.Key.Name == propertyName)
+                .Value.Should().BeEquivalentTo(value, "because all values should be added when setting a dictionary.");
         }
     }
 }

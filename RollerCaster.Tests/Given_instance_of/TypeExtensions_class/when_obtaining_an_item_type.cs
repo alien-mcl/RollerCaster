@@ -12,7 +12,7 @@ namespace Given_instance_of.TypeExtensions_class
         [Test]
         public void Should_throw_when_no_type_is_given()
         {
-            ((Type)null).Invoking(type => type.GetItemType()).ShouldThrow<ArgumentNullException>();
+            ((Type)null).Invoking(type => type.GetItemType()).Should().Throw<ArgumentNullException>();
         }
 
         [Test]

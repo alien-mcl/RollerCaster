@@ -84,7 +84,7 @@ namespace Given_instance_of.MulticastObject_class
         {
             new MethodImplementationBuilder<IMethodCarrier>(new Dictionary<MethodInfo, MethodInfo>(), new Dictionary<PropertyInfo, MethodInfo>())
                 .Invoking(_ => _.ForFunction(methodToImplement).ImplementedBy(implementationMethod))
-                .ShouldThrow<InvalidOperationException>();
+                .Should().Throw<InvalidOperationException>();
         }
 
         private static TestCaseData CreateTestCase(int index, string methodName, string implementationMethodName = null)

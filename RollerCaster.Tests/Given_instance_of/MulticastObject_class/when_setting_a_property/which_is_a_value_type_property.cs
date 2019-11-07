@@ -23,21 +23,21 @@ namespace Given_instance_of.MulticastObject_class.when_setting_a_property
         public void Should_throw_when_no_multicast_object_is_given()
         {
             ((MulticastObject)null).Invoking(instance => instance.SetProperty<IProduct, string>("Name", null))
-                .ShouldThrow<ArgumentNullException>().And.ParamName.Should().Be("multicastObject");
+                .Should().Throw<ArgumentNullException>().And.ParamName.Should().Be("multicastObject");
         }
 
         [Test]
         public void Should_throw_when_no_property_name_is_given()
         {
             ((MulticastObject)null).Invoking(instance => instance.SetProperty<IProduct, string>(null, null))
-                .ShouldThrow<ArgumentNullException>().And.ParamName.Should().Be("propertyName");
+                .Should().Throw<ArgumentNullException>().And.ParamName.Should().Be("propertyName");
         }
 
         [Test]
         public void Should_throw_when_empty_property_name_is_given()
         {
             ((MulticastObject)null).Invoking(instance => instance.SetProperty<IProduct, string>(String.Empty, null))
-                .ShouldThrow<ArgumentOutOfRangeException>().And.ParamName.Should().Be("propertyName");
+                .Should().Throw<ArgumentOutOfRangeException>().And.ParamName.Should().Be("propertyName");
         }
     }
 }

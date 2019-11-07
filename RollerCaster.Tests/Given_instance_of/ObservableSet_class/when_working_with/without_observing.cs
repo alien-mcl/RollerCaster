@@ -45,25 +45,25 @@ namespace Given_instance_of.ObservableSet_class.when_working_with
         [Test]
         public void Should_intersect_set_with_first_three_numbers()
         {
-            After(() => Set.IntersectWith(FirstThree)).ShouldBeEquivalentTo(new[] { 1, 2 });
+            After(() => Set.IntersectWith(FirstThree)).Should().BeEquivalentTo(1, 2);
         }
         
         [Test]
         public void Should_leave_set_except_first_three_numbers()
         {
-            After(() => Set.ExceptWith(FirstThree)).ShouldBeEquivalentTo(new[] { 3 });
+            After(() => Set.ExceptWith(FirstThree)).Should().BeEquivalentTo(3);
         }
         
         [Test]
         public void Should_leave_first_three_numbers_symmetrically_except_set()
         {
-            After(() => Set.SymmetricExceptWith(FirstThree)).ShouldBeEquivalentTo(new[] { 0, 3 });
+            After(() => Set.SymmetricExceptWith(FirstThree)).Should().BeEquivalentTo(0, 3);
         }
         
         [Test]
         public void Should_union_first_three_numbers_with_set()
         {
-            After(() => Set.UnionWith(FirstThree)).ShouldBeEquivalentTo(new[] { 0, 1, 2, 3 });
+            After(() => Set.UnionWith(FirstThree)).Should().BeEquivalentTo(0, 1, 2, 3);
         }
     }
 }

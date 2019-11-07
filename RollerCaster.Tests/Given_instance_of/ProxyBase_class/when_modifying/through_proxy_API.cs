@@ -33,12 +33,10 @@ namespace Given_instance_of.ProxyBase_class.when_modifying
         public void Should_provide_all_property_values()
         {
             Entity.Unwrap().PropertyValues.Select(_ => new { Property = _.Property.Name, _.Value })
-                .ShouldBeEquivalentTo(new[]
-                {
+                .Should().BeEquivalentTo(
                     new { Property = "UniqueId", Value = (object)"13_2" },
                     new { Property = "RelatedId", Value = (object)2 },
-                    new { Property = "Id", Value = (object)13 }
-                });
+                    new { Property = "Id", Value = (object)13 });
         }
 
         [SetUp]
