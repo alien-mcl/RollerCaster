@@ -22,6 +22,7 @@ namespace RollerCaster
 #else
         private static readonly AssemblyBuilder AssemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName, AssemblyBuilderAccess.Run);
 #endif
+        private static readonly ConstructorInfo InvalidOperationExceptionCtor = typeof(InvalidOperationException).GetConstructor(new[] { typeof(string) });
         private static readonly ModuleBuilder ModuleBuilder = AssemblyBuilder.DefineDynamicModule(AssemblyNameString + "dll");
         private static readonly MethodInfo EqualsMethodInfo = typeof(object).GetMethod(nameof(Equals), BindingFlags.Static | BindingFlags.Public);
         private static readonly MethodInfo GetPropertyMethodInfo;
@@ -361,8 +362,16 @@ namespace RollerCaster
             FieldBuilder wrappedObjectFieldBuilder,
             FieldBuilder currentCastedTypeFieldBuilder)
         {
-            typeBuilder.CreateProperty(typeof(IProxy).GetProperty(nameof(IProxy.WrappedObject)), wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, wrappedObjectFieldBuilder);
-            typeBuilder.CreateProperty(typeof(IProxy).GetProperty(nameof(IProxy.CurrentCastedType)), wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, currentCastedTypeFieldBuilder);
+            typeBuilder.CreateProperty(
+                typeof(IProxy).GetProperty(nameof(IProxy.WrappedObject)),
+                wrappedObjectFieldBuilder,
+                currentCastedTypeFieldBuilder,
+                wrappedObjectFieldBuilder);
+            typeBuilder.CreateProperty(
+                typeof(IProxy).GetProperty(nameof(IProxy.CurrentCastedType)),
+                wrappedObjectFieldBuilder,
+                currentCastedTypeFieldBuilder,
+                currentCastedTypeFieldBuilder);
             foreach (var property in properties)
             {
                 MethodInfo implementationMethod;
@@ -371,7 +380,7 @@ namespace RollerCaster
                     implementationMethod = null;
                 }
 
-                typeBuilder.CreateProperty(property, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, null, implementationMethod);
+                typeBuilder.CreateProperty(property, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, null, implementationMethod, true);
             }
         }
 
@@ -471,7 +480,8 @@ namespace RollerCaster
             FieldBuilder wrappedObjectFieldBuilder,
             FieldBuilder currentCastedTypeFieldBuilder,
             FieldBuilder specialFieldBuilder,
-            MethodInfo methodToCall = null)
+            MethodInfo methodToCall = null,
+            bool withLockability = false)
         {
             PropertyBuilder propertyBuilder = typeBuilder.DefineProperty(property.Name, PropertyAttributes.HasDefault, property.PropertyType, null);
             if (methodToCall != null)
@@ -483,7 +493,7 @@ namespace RollerCaster
                 typeBuilder.CreatePropertyGetter(property, propertyBuilder, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, specialFieldBuilder);
                 if (property.CanWrite && (property.GetSetMethod().IsAbstract || property.GetSetMethod().IsVirtual))
                 {
-                    typeBuilder.CreatePropertySetter(property, propertyBuilder, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder);
+                    typeBuilder.CreatePropertySetter(property, propertyBuilder, wrappedObjectFieldBuilder, currentCastedTypeFieldBuilder, withLockability);
                 }
             }
         }
@@ -610,7 +620,8 @@ namespace RollerCaster
             PropertyInfo property,
             PropertyBuilder propertyBuilder,
             FieldBuilder wrappedObjectFieldBuilder,
-            FieldBuilder currentCastedTypeFieldBuilder)
+            FieldBuilder currentCastedTypeFieldBuilder,
+            bool withLockability = false)
         {
             MethodBuilder setterBuilder = typeBuilder.DefineMethod(
                 "set_" + property.Name,
@@ -620,8 +631,22 @@ namespace RollerCaster
             setterBuilder.DefineParameter(1, ParameterAttributes.In, property.Name.Substring(0, 1).ToLower() + (property.Name.Length > 1 ? property.Name.Substring(1) : String.Empty));
             var useBaseImplementation = property.UseBaseImplementation();
             ILGenerator setIl = setterBuilder.GetILGenerator();
-
+            Label isUnlocked = withLockability ? setIl.DefineLabel() : default(Label);
             setIl.Emit(OpCodes.Nop);
+            if (withLockability)
+            {
+                Console.WriteLine(InvalidOperationExceptionCtor.Name);
+                setIl.Emit(OpCodes.Ldarg_0);
+                setIl.Emit(OpCodes.Ldfld, wrappedObjectFieldBuilder);
+                setIl.Emit(OpCodes.Callvirt, typeof(MulticastObject).GetMethod(nameof(MulticastObject.GetLockedState)));
+                setIl.Emit(OpCodes.Brfalse_S, isUnlocked);
+                setIl.Emit(OpCodes.Nop);
+                setIl.Emit(OpCodes.Ldstr, "This instance is locked.");
+                setIl.Emit(OpCodes.Newobj, InvalidOperationExceptionCtor);
+                setIl.Emit(OpCodes.Throw);
+                setIl.MarkLabel(isUnlocked);
+            }
+
             if (useBaseImplementation)
             {
                 setIl.Emit(OpCodes.Ldarg_0);

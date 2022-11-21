@@ -22,6 +22,11 @@ namespace RollerCaster.Data
 
             set
             {
+                if (_wrappedObject.GetLockedState())
+                {
+                    throw new InvalidOperationException("This instance is locked.");
+                }
+
                 base.SomeValue = value;
                 _wrappedObject.SetProperty(_currentCastedType, typeof(int), "SomeValue", base.SomeValue);
             }

@@ -17,6 +17,8 @@ namespace RollerCaster
     {
         private static readonly Type ReferenceType = typeof(void);
 
+        private bool _lockedState;
+
         /// <summary>Initializes a new instance of the <see cref="MulticastObject"/> class.</summary>
         public MulticastObject()
         {
@@ -215,6 +217,30 @@ namespace RollerCaster
         object ICloneable.Clone()
         {
             return Clone(true);
+        }
+
+        /// <summary>Gets a lock status.</summary>
+        /// <returns><i>true</i> in case proxies of this instance can we written to; otherwise <i>false</i>.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "In order to avoid getting unwanted property in the way, method fits better.")]
+        public bool GetLockedState()
+        {
+            return _lockedState;
+        }
+
+        /// <summary>Locks this instance proxy against writing.</summary>
+        /// <remarks>
+        /// Properties of proxies will throw <see cref="InvalidOperationException" /> when calling their setters.
+        /// Collections will still be modifiable though.
+        /// </remarks>
+        public void LockInstance()
+        {
+            _lockedState = true;
+        }
+
+        /// <summary>Unlocks this instance proxy for writing.</summary>
+        public void UnlockInstance()
+        {
+            _lockedState = false;
         }
 
         internal object GetProperty(Type objectType, Type propertyType, string propertyName)

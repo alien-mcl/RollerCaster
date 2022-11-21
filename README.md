@@ -44,3 +44,22 @@ In the implementation provided you can access the instance on which the method i
 Still, there is a possibility of using _Unwrap()_ or _TryUnwrap()_ method to access an underlying _MulticastObject_ 
 proxy and use _GetProperty_ method in conjuction with i.e. _HiddenPropertyInfo_ also available in this library to 
 gain access to properties not exposed by the interfaces the proxy was casted to.
+
+## Locking instances
+
+Since version 1.4 it is possible to lock instance from writing to properties. This might be achieved by calling i.e.:
+```csharp
+var multicastObject = new MulticastObject();
+if (!multicastObject.GetLockedState())
+{
+	multicastObject.LockInstance();
+}
+else
+{
+	multicastObject.UnlockInstance();
+}
+```
+
+Locking an instance will cause property setters on proxy instances (after using _ActLike_) to throw InvalidOperationException.
+Collections still can be modified as it affects only property setters. It is still possible to modify properties without proxy
+through the MulticastObject API.
