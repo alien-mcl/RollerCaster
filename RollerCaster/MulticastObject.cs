@@ -109,9 +109,9 @@ namespace RollerCaster
                     value = propertyInfo.PropertyType.GetDefaultValue();
                 }
 
-                if (isDefaultValueProvided && value != null)
+                if (isDefaultValueProvided)
                 {
-                    SetProperty(propertyInfo, value, null);
+                    SetPropertyInternal(propertyInfo, value, null);
                 }
 
                 return value;
@@ -276,44 +276,7 @@ namespace RollerCaster
                 throw new ArgumentNullException(nameof(propertyInfo));
             }
 
-            if (instance != null)
-            {
-                propertyInfo.SetValue(instance, value);
-                return;
-            }
-
-            if (SetPhysicalProperty(propertyInfo.Name, value))
-            {
-                return;
-            }
-
-            this.EnsureDetailsOf(propertyInfo.DeclaringType);
-            var valueType = propertyInfo.PropertyType;
-            if (valueType.IsAnEnumerable() && !valueType.IsReadOnlyEnumerable() && (value == null || value.GetType() != valueType))
-            {
-                SetEnumerableProperty(valueType, propertyInfo, value);
-                return;
-            }
-
-            if (!valueType.IsValueType)
-            {
-                valueType = ReferenceType;
-            }
-
-            lock (Sync)
-            {
-                var typeProperties = Properties
-                    .TryGet(propertyInfo.DeclaringType, CreateNewTypePropertyBag)
-                    .TryGet(valueType, CreateNewPropertyBag);
-                if (value == null)
-                {
-                    typeProperties.Remove(propertyInfo);
-                }
-                else
-                {
-                    typeProperties[propertyInfo] = value;
-                }
-            }
+            SetPropertyInternal(propertyInfo, value, instance);
         }
         
         private static void OnMethodImplementationAdded(object sender, NotifyCollectionChangedEventArgs e)
@@ -375,6 +338,41 @@ namespace RollerCaster
 
             existingProperty.SetValue(this, value);
             return true;
+        }
+
+        private void SetPropertyInternal(PropertyInfo propertyInfo, object value, object instance)
+        {
+            if (instance != null)
+            {
+                propertyInfo.SetValue(instance, value);
+                return;
+            }
+
+            if (SetPhysicalProperty(propertyInfo.Name, value))
+            {
+                return;
+            }
+
+            this.EnsureDetailsOf(propertyInfo.DeclaringType);
+            var valueType = propertyInfo.PropertyType;
+            if (valueType.IsAnEnumerable() && !valueType.IsReadOnlyEnumerable() && (value == null || value.GetType() != valueType))
+            {
+                SetEnumerableProperty(valueType, propertyInfo, value);
+                return;
+            }
+
+            if (!valueType.IsValueType)
+            {
+                valueType = ReferenceType;
+            }
+
+            lock (Sync)
+            {
+                var typeProperties = Properties
+                    .TryGet(propertyInfo.DeclaringType, CreateNewTypePropertyBag)
+                    .TryGet(valueType, CreateNewPropertyBag);
+                typeProperties[propertyInfo] = value;
+            }
         }
 
         private object GetEnumerableProperty(Type valueType, PropertyInfo propertyInfo)

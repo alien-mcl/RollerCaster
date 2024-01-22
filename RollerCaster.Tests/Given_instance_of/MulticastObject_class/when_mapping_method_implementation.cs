@@ -48,7 +48,6 @@ namespace Given_instance_of.MulticastObject_class
         }
 
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures", Justification = "This is a test subject only.")]
-        [Test]
         [TestCaseSource(nameof(Actions))]
         public void Should_map_action_correctly(
             Expression<Action<IMethodCarrier>> methodToImplement,
@@ -62,7 +61,6 @@ namespace Given_instance_of.MulticastObject_class
         }
 
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures", Justification = "This is a test subject only.")]
-        [Test]
         [TestCaseSource(nameof(Funcs))]
         public void Should_map_func_correctly(
             Expression<Func<IMethodCarrier, bool>> methodToImplement,
@@ -76,7 +74,6 @@ namespace Given_instance_of.MulticastObject_class
         }
 
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures", Justification = "This is a test subject only.")]
-        [Test]
         [TestCaseSource(nameof(InvalidMatches))]
         public void Should_throw_on_invalid_implementation_method(
             Expression<Func<IMethodCarrier, bool>> methodToImplement,

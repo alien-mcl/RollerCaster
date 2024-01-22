@@ -15,7 +15,7 @@ namespace Given_instance_of.MulticastObject_class.when_setting_a_property
         [Test]
         public void Should_set_that_property_correctly()
         {
-            MulticastObject.Properties.Should().NotHavePropertySet<IProduct>(ExpectedPropertyName);
+            MulticastObject.Properties.Should().HavePropertySet<IProduct>(ExpectedPropertyName, null);
         }
     }
 }

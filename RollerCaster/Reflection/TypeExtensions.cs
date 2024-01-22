@@ -323,6 +323,24 @@ namespace RollerCaster.Reflection
             return result;
         }
 
+        internal static Type FindTypeImplementing(this IEnumerable<Type> types, MethodInfo method)
+        {
+            Type result = null;
+            if (method.DeclaringType.IsInterface)
+            {
+                result = (
+                    from implementingType in types
+                    where !implementingType.IsEnum && !implementingType.IsInterface
+                    let map = implementingType.GetInterfaceMap(method.DeclaringType)
+                    let index = Array.IndexOf(map.InterfaceMethods, method)
+                    where index != -1 && !map.TargetMethods[index].IsAbstract
+                    select implementingType)
+                    .FirstOrDefault();
+            }
+
+            return result;
+        }
+
         internal static bool IsGenericCollection(this Type type)
         {
             return (!type.IsGenericType && NonGenericCollectionTypes.Contains(type))

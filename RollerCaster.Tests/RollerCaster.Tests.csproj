@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\packages\NUnit.3.13.3\build\NUnit.props" Condition="Exists('..\packages\NUnit.3.13.3\build\NUnit.props')" />
   <Import Project="..\packages\NUnit3TestAdapter.4.3.1\build\net35\NUnit3TestAdapter.props" Condition="Exists('..\packages\NUnit3TestAdapter.4.3.1\build\net35\NUnit3TestAdapter.props')" />
+  <Import Project="..\packages\NUnit.3.13.3\build\NUnit.props" Condition="Exists('..\packages\NUnit.3.13.3\build\NUnit.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -61,7 +61,9 @@
     <Compile Include="Collections\CollectionExtensions.cs" />
     <Compile Include="Collections\SpecializedCollection.cs" />
     <Compile Include="Collections\ReadOnlyCollection.cs" />
+    <Compile Include="Data\IInterface.cs" />
     <Compile Include="Data\IInterfaceWithMethod.cs" />
+    <Compile Include="Data\ImplementingType.cs" />
     <Compile Include="Data\ISomeInterface.cs" />
     <Compile Include="Data\IMethodCarrier.cs" />
     <Compile Include="Data\ITestResource.cs" />
@@ -110,6 +112,7 @@
     <Compile Include="Given_instance_of\MulticastObject_class\when_setting_a_property\which_is_a_value_type_property.cs" />
     <Compile Include="Given_instance_of\DynamicExtensions_class\when_object_is_given.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_getting_a_property\and_something_is_missing.cs" />
+    <Compile Include="Given_instance_of\MulticastObject_class\when_using_method_implementation.cs" />
     <Compile Include="Given_instance_of\MulticastObject_class\when_working_as_dynamic.cs" />
     <Compile Include="Given_instance_of\MulticastPropertyValue_class\when_comparing.cs" />
     <Compile Include="Given_instance_of\ObservableDictionary_class\when_operating_on.cs" />
@@ -169,7 +172,7 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\NUnit3TestAdapter.4.3.1\build\net35\NUnit3TestAdapter.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\NUnit3TestAdapter.4.3.1\build\net35\NUnit3TestAdapter.props'))" />
     <Error Condition="!Exists('..\packages\NUnit.3.13.3\build\NUnit.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\NUnit.3.13.3\build\NUnit.props'))" />
+    <Error Condition="!Exists('..\packages\NUnit3TestAdapter.4.3.1\build\net35\NUnit3TestAdapter.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\NUnit3TestAdapter.4.3.1\build\net35\NUnit3TestAdapter.props'))" />
   </Target>
 </Project>

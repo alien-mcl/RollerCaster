@@ -349,9 +349,13 @@ namespace RollerCaster
                 {
                     typeBuilder.CreateMethodOverrideImplementation(method, implementationMethod);
                 }
-                else if (method.IsAbstract)
+                else
                 {
-                    throw new InvalidOperationException($"Unable to provide implementation for '{method.DeclaringType}.{method.Name}'.");
+                    bool isImplementationFound = types.FindTypeImplementing(method) != null;
+                    if (!isImplementationFound && method.IsAbstract)
+                    {
+                        throw new InvalidOperationException($"Unable to provide implementation for '{method.DeclaringType}.{method.Name}'.");
+                    }
                 }
             }
         }

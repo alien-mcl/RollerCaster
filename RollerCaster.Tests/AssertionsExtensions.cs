@@ -41,25 +41,6 @@ namespace RollerCaster
                 .Value.Should().Be(value, "because '{0}' is the value supposed to be set.", value);
         }
 
-        internal static void NotHavePropertySet<TEntity>(
-            this GenericDictionaryAssertions<Type, Dictionary<Type, Dictionary<PropertyInfo, object>>> properties,
-            string propertyName)
-        {
-            if (!properties.Subject.ContainsKey(typeof(TEntity)))
-            {
-                return;
-            }
-
-            var entityTypeProperties = properties.Subject[typeof(TEntity)].Should();
-            if (!entityTypeProperties.Subject.ContainsKey(typeof(void)))
-            {
-                return;
-            }
-
-            var typeProperties = entityTypeProperties.Subject[typeof(void)].Keys.Should();
-            typeProperties.NotContain(item => item.Name == propertyName, "because '{0}' is not supposed to be set.", propertyName);
-        }
-
         internal static void HaveCollectionPropertyValues<TEntity, TValue>(
             this GenericDictionaryAssertions<Type, Dictionary<Type, Dictionary<PropertyInfo, object>>> properties,
             string propertyName,
