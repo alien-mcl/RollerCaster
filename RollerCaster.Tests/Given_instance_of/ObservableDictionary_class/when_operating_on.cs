@@ -207,8 +207,22 @@ namespace Given_instance_of.ObservableDictionary_class
             }
         }
 
+        [Test]
+        public void Should_detect_new_value_in_empty_dictionary()
+        {
+            WithNewMap()["test"] = "x";
+            NewItems.Should().ContainKey("test").WhichValue.Should().Be("x");
+        }
+
         [SetUp]
         public void Setup()
+        {
+            WithNewMap();
+            Map["A"] = "1";
+            TheTest();
+        }
+
+        private ObservableDictionary<string, string> WithNewMap()
         {
             NewItems = new Dictionary<string, string>();
             OldItems = new Dictionary<string, string>();
@@ -216,9 +230,8 @@ namespace Given_instance_of.ObservableDictionary_class
             ChangedItems = new Dictionary<string, Tuple<string, string>>();
             BoxedCopy = new KeyValuePair<string, string>[1];
             UnboxedCopy = new DictionaryEntry[1];
-            Map = new ObservableDictionary<string, string>();
-            Map["A"] = "1";
             IDictionary<string, string> oldItems = null;
+            Map = new ObservableDictionary<string, string>();
             Map.CollectionChanged += (sender, e) =>
             {
                 switch (e.Action)
@@ -246,7 +259,7 @@ namespace Given_instance_of.ObservableDictionary_class
                         foreach (KeyValuePair<string, string> entry in e.OldItems.Cast<KeyValuePair<string, string>>())
                         {
                             ChangedItems[entry.Key] = new Tuple<string, string>(
-                                entry.Value, 
+                                entry.Value,
                                 e.NewItems.Cast<KeyValuePair<string, string>>().Where(_ => _.Key == entry.Key).Select(_ => _.Value).First());
                         }
 
@@ -258,7 +271,7 @@ namespace Given_instance_of.ObservableDictionary_class
                 }
             };
 
-            TheTest();
+            return Map;
         }
     }
 }

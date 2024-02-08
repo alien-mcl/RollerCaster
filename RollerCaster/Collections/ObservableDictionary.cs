@@ -120,12 +120,27 @@ namespace RollerCaster.Collections
             {
                 TValue currentValue = default(TValue);
                 NotifyCollectionChangedEventArgs e = null;
-                if (CollectionChanged != null && TryGetValue(key, out currentValue) && !Equals(value, currentValue))
+                if (CollectionChanged != null)
                 {
-                    e = new NotifyCollectionChangedEventArgs(
-                        NotifyCollectionChangedAction.Replace,
-                        new KeyValuePair<TKey, TValue>(key, value),
-                        new KeyValuePair<TKey, TValue>(key, currentValue));
+                    if (TryGetValue(key, out currentValue))
+                    {
+                        if (!Equals(value, currentValue))
+                        {
+                            e = new NotifyCollectionChangedEventArgs(
+                                NotifyCollectionChangedAction.Replace,
+                                new KeyValuePair<TKey, TValue>(key, value),
+                                new KeyValuePair<TKey, TValue>(key, currentValue));
+                        }
+                    }
+                    else
+                    {
+                        if (!Equals(value, currentValue))
+                        {
+                            e = new NotifyCollectionChangedEventArgs(
+                                NotifyCollectionChangedAction.Add,
+                                new KeyValuePair<TKey, TValue>(key, value));
+                        }
+                    }
                 }
 
                 _map[key] = value;

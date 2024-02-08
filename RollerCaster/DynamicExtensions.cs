@@ -639,7 +639,6 @@ namespace RollerCaster
             setIl.Emit(OpCodes.Nop);
             if (withLockability)
             {
-                Console.WriteLine(InvalidOperationExceptionCtor.Name);
                 setIl.Emit(OpCodes.Ldarg_0);
                 setIl.Emit(OpCodes.Ldfld, wrappedObjectFieldBuilder);
                 setIl.Emit(OpCodes.Callvirt, typeof(MulticastObject).GetMethod(nameof(MulticastObject.GetLockedState)));
